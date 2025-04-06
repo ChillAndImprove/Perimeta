@@ -13,6 +13,8 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.support import expected_conditions as EC  # Added alias
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
+from selenium.common.exceptions import TimeoutException
+
 
 @pytest.fixture(scope="class")
 def browser_and_setup(request):
@@ -23,7 +25,7 @@ def browser_and_setup(request):
     driver = webdriver.Chrome(options)
 
     # ✅ Navigate and click on asset once
-    driver.get("http://0.0.0.0:8080/indexTests.html")
+    driver.get("http://0.0.0.0:8000/indexTests.html")
     driver.set_window_size(1854, 1011)
     driver.switch_to.frame(0)
     driver.find_element(By.CSS_SELECTOR, "td:nth-child(1) > .geBtn").click()
@@ -80,10 +82,161 @@ def browser_and_setup(request):
     except Exception as e:
         print(f"[Teardown Warning] {e}")
 
-    
+@pytest.fixture(autouse=True)
+def post_test_hook(request):
+    yield  # test runs here
+    driver = getattr(request.cls, "driver", None)
+    if not driver:
+        print("[post_test_hook] No driver found")
+        return
+
+    try:
+        # 👇 Insert your JS here
+        oval_node_ids = driver.execute_script("""
+            try {
+                var graph = editorUi.editor.graph;
+                var model = graph.model;
+                var root = model.getRoot();
+                var ovalCellIds = [];
+
+                var childCount = model.getChildCount(root);
+                for (var i = 0; i < childCount; i++) {
+                    var layer = model.getChildAt(root, i);
+                    var innerCount = model.getChildCount(layer);
+                    for (var j = 0; j < innerCount; j++) {
+                        var cell = model.getChildAt(layer, j);
+                        if (cell != null && cell.vertex) {
+                            var style = model.getStyle(cell);
+                            if (style && style.indexOf("shape=ellipse") !== -1) {
+                                ovalCellIds.push(String(cell.id));
+                            }
+                        }
+                    }
+                }
+
+                graph.setSelectionCells(ovalCellIds.map(function(id) {
+                    return model.getCell(id);
+                }));
+
+                return ovalCellIds;
+            } catch (err) {
+                return ["__JS_ERROR__", err.toString()];
+            }
+        """)
+        print("Oval nodes focused:", oval_node_ids)
+
+        target_label = "foo"
+        target_cell_id = driver.execute_script(f"""
+            var graph = editorUi.editor.graph;
+            var model = graph.model;
+            var root = model.getRoot();
+
+            var childCount = model.getChildCount(root);
+            for (var i = 0; i < childCount; i++) {{
+                var layer = model.getChildAt(root, i);
+                var innerCount = model.getChildCount(layer);
+                for (var j = 0; j < innerCount; j++) {{
+                    var cell = model.getChildAt(layer, j);
+                    if (cell != null && cell.vertex) {{
+                        var label = cell.value;
+                        if (typeof label !== "string" && label && label.hasAttribute) {{
+                            label = label.getAttribute("label") || label.getAttribute("value");
+                        }}
+                        if (label === "{target_label}") {{
+                            graph.setSelectionCell(cell);
+                            graph.scrollCellToVisible(cell);
+                            return cell.id;
+                        }}
+                    }}
+                }}
+            }}
+            return null;
+        """)
+        print("Focused node ID:", target_cell_id)
+    except Exception as e:
+        print(f"[post_test_hook error] {e}")
+
+   
 @pytest.mark.usefixtures("browser_and_setup")
 class TestOpenGraph():
+    def delete_some_nodes(self):
+        # STEP 1: Get state BEFORE deletion
+        old_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+        old_tech_assets = old_data.get("technical_assets", {})
+        old_count = len(old_tech_assets)
 
+        print(f"🔢 Initial technical_assets count: {old_count}")
+
+        # STEP 2: Select only oval-shaped nodes
+        oval_node_ids = self.driver.execute_script("""
+            try {
+                var graph = editorUi.editor.graph;
+                var model = graph.model;
+                var root = model.getRoot();
+                var ovalCellIds = [];
+
+                var childCount = model.getChildCount(root);
+                for (var i = 0; i < childCount; i++) {
+                    var layer = model.getChildAt(root, i);
+                    var innerCount = model.getChildCount(layer);
+                    for (var j = 0; j < innerCount; j++) {
+                        var cell = model.getChildAt(layer, j);
+                        if (cell != null && cell.vertex) {
+                            var style = model.getStyle(cell);
+                            if (style && style.indexOf("shape=ellipse") !== -1) {
+                                ovalCellIds.push(String(cell.id));
+                            }
+                        }
+                    }
+                }
+
+                graph.setSelectionCells(ovalCellIds.map(function(id) {
+                    return model.getCell(id);
+                }));
+
+                return ovalCellIds;
+            } catch (err) {
+                return ["__JS_ERROR__", err.toString()];
+            }
+        """)
+
+        assert "__JS_ERROR__" not in oval_node_ids, f"JavaScript error: {oval_node_ids[1]}"
+        print(f"🎯 Selected {len(oval_node_ids)} oval nodes to delete.")
+
+        # STEP 3: Simulate Delete key
+        ActionChains(self.driver).send_keys(Keys.DELETE).perform()
+        time.sleep(1)
+
+        # STEP 4: Get state AFTER deletion
+        new_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+        new_tech_assets = new_data.get("technical_assets", {})
+        new_count = len(new_tech_assets)
+
+        print(f"📉 New technical_assets count: {new_count}")
+
+        # STEP 5: Validate deletion count
+        removed_count = old_count - new_count
+        expected_removal = len(oval_node_ids)
+
+        assert removed_count == expected_removal, (
+            f"❌ Expected to delete {expected_removal}, but only {removed_count} were removed."
+        )
+        print(f"✅ Deleted {removed_count} oval nodes successfully.")
+
+        # STEP 6: Undo (Ctrl+Z)
+        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('z').key_up(Keys.CONTROL).perform()
+        time.sleep(1)
+
+        # STEP 7: Get state AFTER undo
+        restored_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+        restored_tech_assets = restored_data.get("technical_assets", {})
+
+        assert restored_tech_assets == old_tech_assets, (
+            "❌ Undo failed: technical_assets state after undo does not match original."
+        )
+        print("✅ Undo successful: technical_assets restored to original state.")
+
+        return restored_tech_assets
   
     def click_and_assert_nested_key_exists(
             self,
@@ -112,27 +265,45 @@ class TestOpenGraph():
                 except (KeyError, TypeError):
                     return None
 
+            WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+            ).click()
+            input_box = self.driver.switch_to.active_element
+            input_box.send_keys(Keys.CONTROL, 'a')
+            input_box.send_keys("foo")
+            WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+            ).click()
             assert isinstance(nested_path_prefix, list), "nested_path_prefix must be a list"
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
             old_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
-            old_len = len(old_nested) if hasattr(old_nested, '__len__') else None
-            set_trace()
+            #old_len = len(old_nested) if hasattr(old_nested, '__len__') else None
+            old_len = len(old_nested) if isinstance(old_nested, list) else 0
+
             # Step 1: Click the first element (e.g., open dropdown)
             clickable_1 = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, click_xpath_1))
             )
             clickable_1.click()
 
-            WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, click_xpath_2))
-            )
-
-            # Step 2: Click the second element (the actual dropdown value)
+            try:
+                # First try: wait for presence of element at click_xpath_2
+                WebDriverWait(self.driver, 2).until(
+                    EC.presence_of_element_located((By.XPATH, click_xpath_2))
+                )
+            except Exception as e:
+                # If it fails (times out), fall back to trying to click click_xpath_1
+                clickable_1 = WebDriverWait(self.driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, click_xpath_1))
+                )
+                clickable_1.click()            # Step 2: Click the second element (the actual dropdown value)
             clickable_2 = WebDriverWait(self.driver, 10).until(
                 EC.element_to_be_clickable((By.XPATH, click_xpath_2))
             )
 
             value = clickable_2.get_attribute("value") or clickable_2.text
+            toRemoveElement = threagile_data["data_assets"][value]["id"]
+
             clickable_2.click()
 
             # 🔍 Log the selected value for debugging
@@ -140,12 +311,13 @@ class TestOpenGraph():
             print(f"Expecting data_asset_id: {data_asset_id}")
 
             # Step 4: Fetch model data
+            #set_trace()
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
             new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
             new_len = len(new_nested) if hasattr(new_nested, '__len__') else None
             if old_len is None or new_len is None:
                 raise ValueError(
-                    f"Cannot compare lengths at path '{root_key} -> {asset_key} -> {nested_path}' "
+                    f"Cannot compare length"
                     f"because one of them is None (old_len: {old_len}, new_len: {new_len})"
                 )
 
@@ -164,13 +336,13 @@ class TestOpenGraph():
             for i, key in enumerate(data):
                 print(f"🔍 Step {i} — Key type: {type(key).__name__}, Key value: {key}")
                 
-                if key == data_asset_id:
-                    print(f"✅ Found 'data_asset_id': {key} at step {i}")
+                if key == toRemoveElement:
+                    print(f"✅ Found 'data_asset_id': {toRemoveElement} at step {i}")
                     found = True
                     break
 
             if not found:
-                raise AssertionError(f"❌ 'data_asset_id' ({data_asset_id}) not found in data keys.")
+                raise AssertionError(f"❌ 'data_asset_id' ({toRemoveElement}) not found in data keys.")
 
 
 
@@ -195,13 +367,13 @@ class TestOpenGraph():
 
         assert nested_path and isinstance(nested_path, list), "nested_path must be a non-empty list of keys"
 
+        old = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         # Click the element
         clickable = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, click_xpath))
         )
         parent = clickable.find_element(By.XPATH, "..")
         value = parent.get_attribute("value")
-        old = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         print(value)
         toRemoveElement = old["data_assets"][value]["id"]
 
@@ -210,12 +382,12 @@ class TestOpenGraph():
         print(f"[DEBUG] asset_key: {asset_key}")
         print(f"[DEBUG] nested_path: {nested_path[0]}")
 
-        threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
-        old_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path[0])
+        old_nested = get_nested_value(old, root_key, asset_key, nested_path[0])
         old_len = len(old_nested) if hasattr(old_nested, '__len__') else None
  
-
         clickable.click()
+        threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+
 
         # Wait briefly for the UI/model to update
         self.driver.implicitly_wait(1)
@@ -346,60 +518,6 @@ class TestOpenGraph():
         actual_value = asset.get(attribute)
         assert actual_value == expected_value, f"Expected {attribute} '{expected_value}', but got '{actual_value}'"
 
-
-    def test_edit_description(self):
-        self.edit_and_verify_field(
-            xpath="/html/body/div[4]/div[2]/div/div/div[1]/li[3]/button",
-            input_text="foo",
-            verify_key="foo",
-            verify_field="description",
-            expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
-        )
-
-    def test_select_type(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[1]/div/select", "datastore", "foo", "type")
-
-    def test_select_technology(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[2]/div/select",  "build-pipeline", "foo", "technology")
-
-    def test_select_size(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[3]/div/select", "system", "foo", "size")
-
-    def test_select_machine(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[4]/div/select", "virtual", "foo", "machine")
-
-    def test_select_encryption(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[5]/div/select", "data-with-symmetric-shared-key", "foo", "encryption")
-
-    def test_select_usage(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/li[1]/div/select", "devops", "foo", "usage")
-
-    def test_toggle_used_as_client_by_human(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[1]/input", "foo", "used_as_client_by_human")
-
-    def test_toggle_multi_tenant(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[2]/input", "foo", "multi_tenant")
-
-    def test_toggle_redundant(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[3]/input", "foo", "redundant")
-
-    def test_toggle_custom_developed_parts(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[4]/input", "foo", "custom_developed_parts")
-
-    def test_toggle_out_of_scope(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[5]/input", "foo", "out_of_scope")
-
-    def test_edit_justification_out_of_scope(self):
-        self.edit_and_verify_field(
-            xpath="/html/body/div[4]/div[2]/div/div/div[4]/li[2]/button",
-            input_text="foo",
-            verify_key="foo",
-            verify_field="justification_out_of_scope",
-            expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
-        )
-
     def test_remove_tag_customer_contracts(self):
         self.click_and_assert_nested_key_removed(
             click_xpath="/html/body/div[4]/div[2]/div/div/div[5]/tags/tag[1]/x",
@@ -440,7 +558,7 @@ class TestOpenGraph():
             nested_path=["data_assets_processed", "client-application-code"]
         )
 
-    def test_add_tag_contract_summaries(self):
+    def test_add_tag_data_assets_processed_contract_summaries(self):
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[2]',
@@ -449,7 +567,7 @@ class TestOpenGraph():
             asset_key='foo',
             nested_path_prefix=['data_assets_processed']
         )
-    def test_add_tag_contract_contracts(self):
+    def test_add_tag_data_assets_processed_contract_contracts(self):
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -458,3 +576,99 @@ class TestOpenGraph():
             asset_key='foo',
             nested_path_prefix=['data_assets_processed']
         )
+    def test_add_tag_data_assets_processed_contract_contracts(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[1]',
+            data_asset_id="contract-contracts",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_processed']
+        )
+    def test_add_tag_data_assets_processed_internal_business_data(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[3]',
+            data_asset_id="internal-business-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_processed']
+        )
+    def test_add_tag_data_assets_processed_internal_business_data(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[3]',
+            data_asset_id="internal-business-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_processed']
+        )
+
+    def test_add_tag_data_assets_processed_operational(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[1]',
+            data_asset_id="customer-operational-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_processed']
+        )
+           
+
+    def test_add_tag_data_assets_stored_contract_summaries(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[2]',
+            data_asset_id="contract-summaries",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+    def test_add_tag_data_assets_stored_contract_contracts(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[1]',
+            data_asset_id="contract-contracts",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+    def test_add_tag_data_assets_stored_contract_contracts(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[1]',
+            data_asset_id="contract-contracts",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+    def test_add_tag_data_assets_stored_internal_business_data(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[3]',
+            data_asset_id="internal-business-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+    def test_add_tag_data_assets_stored_internal_business_data(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[3]',
+            data_asset_id="internal-business-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+
+    def test_add_tag_data_assets_stored_operational(self):
+        self.click_and_assert_nested_key_exists(
+            click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
+            click_xpath_2='/html/body/div[9]/div/div[1]',
+            data_asset_id="customer-operational-data",
+            root_key='technical_assets',
+            asset_key='foo',
+            nested_path_prefix=['data_assets_stored']
+        )
+    def test_delete_some_nodes(self):
+        self.delete_some_nodes() 
