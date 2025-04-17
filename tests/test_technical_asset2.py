@@ -1,3 +1,4 @@
+import tempfile
 from pudb import set_trace;
 import pytest
 import time
@@ -16,12 +17,18 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 
 
+temp_profile = tempfile.mkdtemp()
+
 @pytest.fixture(scope="class")
 def browser_and_setup(request):
     # ✅ Setup browser once
     options = Options()
     options.add_argument("--window-size=1854,1011")
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
+    options.add_argument(f'--user-data-dir={temp_profile}')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
     driver = webdriver.Chrome(options)
 
     # ✅ Navigate and click on asset once

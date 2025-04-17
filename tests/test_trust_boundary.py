@@ -1,3 +1,4 @@
+import tempfile
 from pudb import set_trace;
 import pytest
 import time
@@ -16,12 +17,14 @@ from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 
 
+temp_profile = tempfile.mkdtemp()
+
 @pytest.fixture(scope="class")
 def browser_and_setup(request):
     # ✅ Setup browser once
     options = Options()
     options.add_argument("--window-size=1854,1011")
-    #options.add_argument("--headless=new")
+    options.add_argument("--headless=new")
     driver = webdriver.Chrome(options)
 
     # ✅ Navigate and click on asset once
@@ -440,30 +443,42 @@ class TestOpenGraph():
         )
         
         # Retrieve all elements matching the XPath.
-        elements = self.driver.find_elements(By.XPATH, xpath)
-        
-        # Ensure the number of data cells matches the expected count.
-        assert len(elements) == len(expected_texts), (
-            f"Expected {len(expected_texts)} elements, but found {len(elements)} elements."
+        table = self.driver.find_element(By.XPATH, xpath)
+        rows = table.find_elements(By.TAG_NAME, "tr")
+
+        # Skip the first <tr> (the <th> header row)
+        data_rows = rows[1:]
+
+        assert len(data_rows) == len(expected_texts), (
+            f"Expected {len(expected_texts)} rows, but found {len(data_rows)}."
         )
-        
-        # Iterate over the cells and check their text contents.
-        for element, expected_text in zip(elements, expected_texts):
-            actual_text = element.text.strip()
+
+        for row_index, (row, expected_text) in enumerate(zip(data_rows, expected_texts)):
+            td = row.find_element(By.TAG_NAME, "td")
+            actual_text = td.text.strip()
             assert actual_text == expected_text, (
-                f"Expected text '{expected_text}', but found '{actual_text}'."
+                f"Row {row_index}: Expected '{expected_text}', but found '{actual_text}'."
             )
 
+    def test_table_data2(self):
+        # Example XPath for table data cells.
+        # Adjust this XPath as needed if your target data is in a different row or column.
+        data_xpath = "/html/body/div[4]/div[2]/div/div[4]/table"
+        # Array containing the expected text for each data cell in order.
+        expected_data = [
+        ]
+        self.verify_table_elements(data_xpath, expected_data)
     def test_table_data(self):
         # Example XPath for table data cells.
         # Adjust this XPath as needed if your target data is in a different row or column.
-        data_xpath = "/html/body/div[4]/div[2]/div/div[3]/table/tbody/tr/th"
-        
+        data_xpath = "/html/body/div[4]/div[2]/div/div[3]/table"
         # Array containing the expected text for each data cell in order.
         expected_data = [
-            "Load Balancer"
+            "Backend Admin Client",
+            "Backoffice Client",
+            "Git Repository",
+            "Jenkins Buildserver"
         ]
-        
         self.verify_table_elements(data_xpath, expected_data)
     def test_edit_id(self):
         self.edit_and_verify_field(

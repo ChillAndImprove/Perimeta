@@ -1,4 +1,5 @@
 from pudb import set_trace;
+import tempfile
 import pytest
 import time
 import json
@@ -15,12 +16,17 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException
 
+temp_profile = tempfile.mkdtemp()
 
 @pytest.fixture(scope="class")
 def browser_and_setup(request):
     # ✅ Setup browser once
     options = Options()
     options.add_argument("--window-size=1854,1011")
+    options.add_argument(f'--user-data-dir={temp_profile}')
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
     #options.add_argument("--headless=new")
     driver = webdriver.Chrome(options)
 
@@ -190,8 +196,7 @@ def post_test_hook(request):
 
    
 @pytest.mark.usefixtures("browser_and_setup")
-class TestOpenGraph():
-
+class TestEdges():
   
     def click_and_assert_nested_key_exists(
             self,
@@ -213,16 +218,21 @@ class TestOpenGraph():
             :param nested_path_prefix: List of keys leading to the data asset list.
             """
             def get_nested_value(data, root_key, asset_key, nested_path):
-                assert isinstance(nested_path, str), "nested_path must be a string key"
+                assert isinstance(nested_path, (list, tuple)), "nested_path must be a list or tuple of keys"
 
                 try:
-                    return data[root_key][asset_key][nested_path]
+                    value = data[root_key][asset_key]
+                    for key in nested_path:
+                        value = value[key]
+                    return value
                 except (KeyError, TypeError):
                     return None
 
+
+
             assert isinstance(nested_path_prefix, list), "nested_path_prefix must be a list"
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
-            old_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
+            old_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix)
             #old_len = len(old_nested) if hasattr(old_nested, '__len__') else None
             old_len = len(old_nested) if isinstance(old_nested, list) else 0
 
@@ -251,15 +261,15 @@ class TestOpenGraph():
             toRemoveElement = threagile_data["data_assets"][value]["id"]
 
             clickable_2.click()
+            set_trace()
 
             # 🔍 Log the selected value for debugging
             print(f"Selected label: {value}")
             print(f"Expecting data_asset_id: {data_asset_id}")
 
             # Step 4: Fetch model data
-            #set_trace()
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
-            new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
+            new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix)
             new_len = len(new_nested) if hasattr(new_nested, '__len__') else None
             if old_len is None or new_len is None:
                 raise ValueError(
@@ -274,10 +284,16 @@ class TestOpenGraph():
                 )
 
             # Step 3: Build full nested path
-            nested_path = nested_path_prefix + [data_asset_id]
+            nested_path = nested_path_prefix
 
 
-            data = threagile_data[root_key][asset_key][nested_path[0]]
+
+            data = threagile_data
+            data = data[root_key]
+            data = data[asset_key]
+            for key in nested_path:
+                data = data[key]
+
             found = False
             for i, key in enumerate(data):
                 print(f"🔍 Step {i} — Key type: {type(key).__name__}, Key value: {key}")
@@ -289,8 +305,6 @@ class TestOpenGraph():
 
             if not found:
                 raise AssertionError(f"❌ 'data_asset_id' ({toRemoveElement}) not found in data keys.")
-
-
 
 
     def click_and_assert_nested_key_removed(self, click_xpath, root_key="technical_assets", asset_key="foo", nested_path=None):
@@ -315,7 +329,6 @@ class TestOpenGraph():
 
         assert nested_path and isinstance(nested_path, list), "nested_path must be a non-empty list of keys"
 
-        set_trace()
         # Click the element
         clickable = WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, click_xpath))
@@ -334,7 +347,6 @@ class TestOpenGraph():
         threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         old_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path)
         old_len = len(old_nested) if hasattr(old_nested, '__len__') else None
- 
 
         clickable.click()
 
@@ -342,7 +354,7 @@ class TestOpenGraph():
         self.driver.implicitly_wait(1)
 
         # Re-fetch model data
-
+        threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         # Get the nested section (before and after)
         new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path)
         new_len = len(new_nested) if hasattr(new_nested, '__len__') else None
@@ -363,26 +375,18 @@ class TestOpenGraph():
         try:
             current = current[root_key]
             current = current[asset_key]
+            for key in nested_path:
+                current = current[key]
 
-            for i, key in enumerate(nested_path):
-                if isinstance(current, dict):
-                    if key not in current:
-                        return  # ✅ key gone
-                    if current[key] == toRemoveElement:
-                        raise AssertionError(f"Found element with ID '{toRemoveElement}' still present at path {nested_path[:i+1]}")
-                    current = current[key]
-                elif isinstance(current, list):
-                    if not isinstance(key, int) or key >= len(current):
-                        return  # ✅ index gone or invalid
-                    if current[key] == toRemoveElement:
-                        raise AssertionError(f"Found element with ID '{toRemoveElement}' still present at path {nested_path[:i+1]}")
-                    current = current[key]
-                else:
-                    return  # ✅ unexpected structure = considered gone
+            found = False
+            for item in current:
+                if item == toRemoveElement:
+                    found = True
+                    break
 
-            # If we get here, the item still exists — fail
-            full_path = f"{root_key} -> {asset_key} -> {' -> '.join(map(str, nested_path))}"
-            raise AssertionError(f"Expected item to be removed at path '{full_path}', but it still exists")
+            if found:
+                raise AssertionError(f"Expected item to be removed at path '{full_path}', but it still exists")
+
 
         except (KeyError, IndexError, TypeError):
             # ✅ It's gone — either a missing key or index access failure
@@ -390,9 +394,9 @@ class TestOpenGraph():
 
 
 
-    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="protocol_encrypted"):
+    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="internet", previous_value=None):
         """
-        Toggle a checkbox and assert the given boolean attribute in the asset's only communication link is updated.
+        Generic helper to toggle a checkbox and assert the technical asset's boolean attribute is updated accordingly.
         """
         # Wait until the checkbox is present in the DOM
         checkbox = WebDriverWait(self.driver, 10).until(
@@ -401,11 +405,15 @@ class TestOpenGraph():
 
         # Check current state
         was_checked = checkbox.is_selected()
-
+        if previous_value is not None:
+            assert was_checked == previous_value, (
+                f"Expected checkbox to be {'checked' if previous_value else 'unchecked'}, "
+                f"but it was {'checked' if was_checked else 'unchecked'}."
+            )
         # Toggle it
         checkbox.click()
 
-        # Wait a moment if needed
+         # Wait a moment if needed
         self.driver.implicitly_wait(1)
 
         # Fetch updated data
@@ -427,17 +435,16 @@ class TestOpenGraph():
         assert actual_value == expected_value, (
             f"Expected communication link attribute '{attribute}' to be {expected_value}, but got '{actual_value}'"
         )
-    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None):
-        """
-        Edits a field in the UI and verifies that the corresponding attribute in the only communication link
-        of the specified technical asset is updated correctly.
-        """
+    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None,marked_value=None):
         # Click the edit button
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
 
         # Enter the new text
         active = self.driver.switch_to.active_element
         active.send_keys(Keys.CONTROL, 'a')
+        assert marked_value!=None, "Marked value should not be None" 
+        current_value = active.get_attribute("value")
+        assert current_value.startswith(marked_value), f"Unexpected {current_value}"
         active.send_keys(input_text)
 
         # If a save/confirm button needs to be clicked
@@ -465,15 +472,19 @@ class TestOpenGraph():
             assert actual_value == expected_value, f"Expected {verify_field} '{expected_value}', got '{actual_value}'"
 
 
-    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="description"):
+    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="type", previous_value=None):
         """
-        Helper to select a value from a <select> and assert that the first communication link
-        in the given technical asset has the expected value for the specified attribute.
+        Helper to select a value from a <select> and assert that the asset has the expected value for a given attribute.
         """
         select_element = WebDriverWait(self.driver, 10).until(
             EC.presence_of_element_located((By.XPATH, select_xpath))
         )
         dropdown = Select(select_element)
+        if previous_value is not None:
+            current_selected = dropdown.first_selected_option.text.strip()
+            assert current_selected == previous_value, (
+                f"Expected previous value '{previous_value}', but found '{current_selected}'"
+            )
         dropdown.select_by_visible_text(expected_value)
 
         # Re-fetch the data to get updated values
@@ -498,55 +509,50 @@ class TestOpenGraph():
             verify_key="foo",
             verify_field="description",
             expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
+            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]",
+            marked_value="Link to the load balancer"
         )
 
     def test_select_proto(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[1]/div/select", "ws", "foo", "protocol")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[1]/div/select", "ws", "foo", "protocol",previous_value="https")
 
     def test_select_autheni(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[2]/div/select",  "none", "foo", "authentication")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[2]/div/select",  "none", "foo", "authentication",previous_value="session-id")
 
     def test_select_autho(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[3]/div/select", "none", "foo", "authorization")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[3]/div/select", "none", "foo", "authorization",previous_value="enduser-identity-propagation")
 
     def test_select_usage(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[4]/div/select", "devops", "foo", "usage")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li[4]/div/select", "devops", "foo", "usage",previous_value="business")
 
     def test_toggle_vpn(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[1]/input", "foo", "vpn")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[1]/input", "foo", "vpn",False)
 
     def test_toggle_ip_filtered(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[2]/input", "foo", "ip_filtered")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[2]/input", "foo", "ip_filtered",False)
 
     def test_toggle_readonly(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[3]/input", "foo", "readonly")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div[2]/div[3]/input", "foo", "readonly",False)
 
 
-    def test_remove_tag_customer_traffic(self):
+    def test_remove_tag_customer_traffic_sent(self):
         self.click_and_assert_nested_key_removed(
             click_xpath="/html/body/div[4]/div[2]/div/div[3]/tags/tag[1]/x",
             root_key="technical_assets",
             asset_key="foo",
             nested_path=["communication_links", "Customer Traffic","data_assets_sent"]
         )
+
     def test_remove_tag_customer_accounts(self):
         self.click_and_assert_nested_key_removed(
-            click_xpath="/html/body/div[4]/div[2]/div/div[3]/tags/tag[1]/x",
+            click_xpath="/html/body/div[4]/div[2]/div/div[3]/tags/tag/x",
             root_key="technical_assets",
             asset_key="foo",
             nested_path=["communication_links", "Customer Traffic","data_assets_sent"]
         )
-    def test_remove_tag_customer_traffic(self):
+    def test_remove_tag_customer_traffic_received(self):
         self.click_and_assert_nested_key_removed(
-            click_xpath="/html/body/div[4]/div[2]/div/div[3]/tags/tag[1]/x",
-            root_key="technical_assets",
-            asset_key="foo",
-            nested_path=["communication_links", "Customer Traffic","data_assets_received"]
-        )
-    def test_remove_tag_customer_accounts(self):
-        self.click_and_assert_nested_key_removed(
-            click_xpath="/html/body/div[4]/div[2]/div/div[3]/tags/tag[1]/x",
+            click_xpath="/html/body/div[4]/div[2]/div/div[4]/tags/tag[1]/x",
             root_key="technical_assets",
             asset_key="foo",
             nested_path=["communication_links", "Customer Traffic","data_assets_received"]
@@ -554,7 +560,7 @@ class TestOpenGraph():
 
     def test_add_tag_data_assets_processed_contract_summaries(self):
         self.click_and_assert_nested_key_exists(
-            click_xpath_1='/html/body/div[4]/div[2]/div/div[3]/tags/span',
+            click_xpath_1='/html/body/div[4]/div[2]/div/div[4]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
             data_asset_id="contract-contracts",
             root_key='technical_assets',
