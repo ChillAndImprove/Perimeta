@@ -165,7 +165,7 @@ def post_test_hook(request):
 
    
 @pytest.mark.usefixtures("browser_and_setup")
-class TestOpenGraph():
+class TestTechnicalAsset():
     def delete_all_nodes_and_verify_empty(self):
         # Select only oval-shaped nodes
         oval_node_ids = self.driver.execute_script("""
@@ -284,7 +284,6 @@ class TestOpenGraph():
             print(f"Expecting data_asset_id: {data_asset_id}")
 
             # Step 4: Fetch model data
-            #set_trace()
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
             new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
             new_len = len(new_nested) if hasattr(new_nested, '__len__') else None
@@ -367,6 +366,8 @@ class TestOpenGraph():
 
         # Re-fetch model data
 
+
+        threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         # Get the nested section (before and after)
         new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path[0])
         new_len = len(new_nested) if hasattr(new_nested, '__len__') else None
@@ -388,25 +389,15 @@ class TestOpenGraph():
             current = current[root_key]
             current = current[asset_key]
 
-            for i, key in enumerate(nested_path):
-                if isinstance(current, dict):
-                    if key not in current:
-                        return  # ✅ key gone
-                    if current[key] == toRemoveElement:
-                        raise AssertionError(f"Found element with ID '{toRemoveElement}' still present at path {nested_path[:i+1]}")
-                    current = current[key]
-                elif isinstance(current, list):
-                    if not isinstance(key, int) or key >= len(current):
-                        return  # ✅ index gone or invalid
-                    if current[key] == toRemoveElement:
-                        raise AssertionError(f"Found element with ID '{toRemoveElement}' still present at path {nested_path[:i+1]}")
-                    current = current[key]
-                else:
-                    return  # ✅ unexpected structure = considered gone
 
-            # If we get here, the item still exists — fail
-            full_path = f"{root_key} -> {asset_key} -> {' -> '.join(map(str, nested_path))}"
-            raise AssertionError(f"Expected item to be removed at path '{full_path}', but it still exists")
+            found = False
+            for item in current:
+                if item == toRemoveElement:
+                    found = True
+                    break
+
+            if found:
+                raise AssertionError(f"Expected item to be removed at path '{full_path}', but it still exists")
 
         except (KeyError, IndexError, TypeError):
             # ✅ It's gone — either a missing key or index access failure
@@ -414,7 +405,7 @@ class TestOpenGraph():
 
 
 
-    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="internet"):
+    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="internet", previous_value=None):
         """
         Generic helper to toggle a checkbox and assert the technical asset's boolean attribute is updated accordingly.
         """
@@ -425,7 +416,11 @@ class TestOpenGraph():
 
         # Check current state
         was_checked = checkbox.is_selected()
-
+        if previous_value is not None:
+            assert was_checked == previous_value, (
+                f"Expected checkbox to be {'checked' if previous_value else 'unchecked'}, "
+                f"but it was {'checked' if was_checked else 'unchecked'}."
+            )
         # Toggle it
         checkbox.click()
 
@@ -446,13 +441,16 @@ class TestOpenGraph():
             f"Expected '{attribute}' to be {expected_value}, but got '{actual_value}'"
         )
 
-    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None):
+    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None,marked_value=None):
         # Click the edit button
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
 
         # Enter the new text
         active = self.driver.switch_to.active_element
         active.send_keys(Keys.CONTROL, 'a')
+        current_value = active.get_attribute("value")
+        assert current_value.startswith(marked_value), f"Unexpected {current_value}"
+
         active.send_keys(input_text)
 
         # If a save/confirm button needs to be clicked
@@ -472,7 +470,7 @@ class TestOpenGraph():
             actual_value = technical_assets[verify_key].get(verify_field)
             assert actual_value == expected_value, f"Expected {verify_field} '{expected_value}', got '{actual_value}'"
 
-    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="type"):
+    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="type", previous_value=None):
         """
         Helper to select a value from a <select> and assert that the asset has the expected value for a given attribute.
         """
@@ -480,6 +478,11 @@ class TestOpenGraph():
             EC.presence_of_element_located((By.XPATH, select_xpath))
         )
         dropdown = Select(select_element)
+        if previous_value is not None:
+            current_selected = dropdown.first_selected_option.text.strip()
+            assert current_selected == previous_value, (
+                f"Expected previous value '{previous_value}', but found '{current_selected}'"
+            )
         dropdown.select_by_visible_text(expected_value)
 
         # Re-fetch the data to get updated values
@@ -499,41 +502,42 @@ class TestOpenGraph():
             verify_key="foo",
             verify_field="description",
             expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
+            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]",
+            marked_value="Customer Web Client"
         )
 
     def test_select_type(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[1]/div/select", "datastore", "foo", "type")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[1]/div/select", "datastore", "foo", "type","external-entity")
 
     def test_select_technology(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[2]/div/select",  "build-pipeline", "foo", "technology")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[2]/div/select",  "build-pipeline", "foo", "technology","browser")
 
     def test_select_size(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[3]/div/select", "system", "foo", "size")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[3]/div/select", "system", "foo", "size","component")
 
     def test_select_machine(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[4]/div/select", "virtual", "foo", "machine")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[4]/div/select", "virtual", "foo", "machine","physical")
 
     def test_select_encryption(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[5]/div/select", "data-with-symmetric-shared-key", "foo", "encryption")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[2]/li[5]/div/select", "data-with-symmetric-shared-key", "foo", "encryption","none")
 
     def test_select_usage(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/li[1]/div/select", "devops", "foo", "usage")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/li[1]/div/select", "devops", "foo", "usage","business")
 
     def test_toggle_used_as_client_by_human(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[1]/input", "foo", "used_as_client_by_human")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[1]/input", "foo", "used_as_client_by_human",True)
 
     def test_toggle_multi_tenant(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[2]/input", "foo", "multi_tenant")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[2]/input", "foo", "multi_tenant",False)
 
     def test_toggle_redundant(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[3]/input", "foo", "redundant")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[3]/input", "foo", "redundant",False)
 
     def test_toggle_custom_developed_parts(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[4]/input", "foo", "custom_developed_parts")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[4]/input", "foo", "custom_developed_parts",False)
 
     def test_toggle_out_of_scope(self):
-        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[5]/input", "foo", "out_of_scope")
+        self.toggle_checkbox_and_assert("/html/body/div[4]/div[2]/div/div/div[4]/div[5]/input", "foo", "out_of_scope",True)
 
     def test_edit_justification_out_of_scope(self):
         self.edit_and_verify_field(
@@ -542,7 +546,8 @@ class TestOpenGraph():
             verify_key="foo",
             verify_field="justification_out_of_scope",
             expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
+            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]",
+            marked_value="Owned and managed by enduser customer"
         )
 
     def test_remove_tag_customer_contracts(self):
@@ -586,6 +591,15 @@ class TestOpenGraph():
         )
 
     def test_add_tag_data_assets_processed_contract_summaries(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[2]',
@@ -595,6 +609,16 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_processed']
         )
     def test_add_tag_data_assets_processed_contract_contracts(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+ 
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -604,6 +628,16 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_processed']
         )
     def test_add_tag_data_assets_processed_contract_contracts(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+ 
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -613,6 +647,16 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_processed']
         )
     def test_add_tag_data_assets_processed_internal_business_data(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+ 
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[3]',
@@ -622,6 +666,16 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_processed']
         )
     def test_add_tag_data_assets_processed_internal_business_data(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[3]',
@@ -632,6 +686,17 @@ class TestOpenGraph():
         )
 
     def test_add_tag_data_assets_processed_operational(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[5]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -643,6 +708,18 @@ class TestOpenGraph():
            
 
     def test_add_tag_data_assets_stored_contract_summaries(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[2]',
@@ -652,6 +729,18 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_stored']
         )
     def test_add_tag_data_assets_stored_contract_contracts(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -661,6 +750,18 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_stored']
         )
     def test_add_tag_data_assets_stored_contract_contracts(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',
@@ -670,6 +771,18 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_stored']
         )
     def test_add_tag_data_assets_stored_internal_business_data(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[3]',
@@ -679,6 +792,18 @@ class TestOpenGraph():
             nested_path_prefix=['data_assets_stored']
         )
     def test_add_tag_data_assets_stored_internal_business_data(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[3]',
@@ -689,6 +814,18 @@ class TestOpenGraph():
         )
 
     def test_add_tag_data_assets_stored_operational(self):
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
+        ).click()
+        input_box = self.driver.switch_to.active_element
+        input_box.send_keys(Keys.CONTROL, 'a')
+        input_box.send_keys("foo")
+        WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
+        ).click()
+
+
+
         self.click_and_assert_nested_key_exists(
             click_xpath_1='/html/body/div[4]/div[2]/div/div/div[6]/tags/span',
             click_xpath_2='/html/body/div[9]/div/div[1]',

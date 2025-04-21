@@ -157,7 +157,7 @@ def post_test_hook(request):
 
    
 @pytest.mark.usefixtures("browser_and_setup")
-class TestOpenGraph():
+class TestTrustBoundary():
 
   
     def click_and_assert_nested_key_exists(
@@ -354,7 +354,7 @@ class TestOpenGraph():
 
 
 
-    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="internet"):
+    def toggle_checkbox_and_assert(self, checkbox_xpath, asset_key="foo", attribute="internet", previous_value=None):
         """
         Generic helper to toggle a checkbox and assert the technical asset's boolean attribute is updated accordingly.
         """
@@ -365,7 +365,11 @@ class TestOpenGraph():
 
         # Check current state
         was_checked = checkbox.is_selected()
-
+        if previous_value is not None:
+            assert was_checked == previous_value, (
+                f"Expected checkbox to be {'checked' if previous_value else 'unchecked'}, "
+                f"but it was {'checked' if was_checked else 'unchecked'}."
+            )
         # Toggle it
         checkbox.click()
 
@@ -386,13 +390,17 @@ class TestOpenGraph():
             f"Expected '{attribute}' to be {expected_value}, but got '{actual_value}'"
         )
 
-    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None):
+    def edit_and_verify_field(self, xpath, input_text, verify_key, verify_field=None, expected_value=None, save_button_xpath=None,marked_value=None):
         # Click the edit button
         WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable((By.XPATH, xpath))).click()
 
         # Enter the new text
         active = self.driver.switch_to.active_element
         active.send_keys(Keys.CONTROL, 'a')
+        assert marked_value!=None, "Marked value should not be None" 
+        current_value = active.get_attribute("value")
+        assert current_value.startswith(marked_value), f"Unexpected {current_value}"
+
         active.send_keys(input_text)
 
         # If a save/confirm button needs to be clicked
@@ -412,7 +420,7 @@ class TestOpenGraph():
             actual_value = technical_assets[verify_key].get(verify_field)
             assert actual_value == expected_value, f"Expected {verify_field} '{expected_value}', got '{actual_value}'"
 
-    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="type"):
+    def select_and_assert(self, select_xpath, expected_value, asset_key="foo", attribute="type", previous_value=None):
         """
         Helper to select a value from a <select> and assert that the asset has the expected value for a given attribute.
         """
@@ -420,9 +428,14 @@ class TestOpenGraph():
             EC.presence_of_element_located((By.XPATH, select_xpath))
         )
         dropdown = Select(select_element)
+        if previous_value is not None:
+            current_selected = dropdown.first_selected_option.text.strip()
+            assert current_selected == previous_value, (
+                f"Expected previous value '{previous_value}', but found '{current_selected}'"
+            )
         dropdown.select_by_visible_text(expected_value)
 
-        # Re-fetch the data to get updated values
+       # Re-fetch the data to get updated values
         threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
         technical_assets = threagile_data.get("trust_boundaries", {})
         asset = technical_assets.get(asset_key)
@@ -487,7 +500,8 @@ class TestOpenGraph():
             verify_key="foo",
             verify_field="id",
             expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
+            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]",
+            marked_value="dev-network"
         )
     def test_edit_description(self):
         self.edit_and_verify_field(
@@ -496,9 +510,10 @@ class TestOpenGraph():
             verify_key="foo",
             verify_field="description",
             expected_value="foo",
-            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]"
+            save_button_xpath="/html/body/div[10]/table/tbody/tr[3]/td/button[2]",
+            marked_value="Development Network"
         )
 
 
     def test_select_type(self):
-        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li/div/select", "network-on-prem", "foo", "type")
+        self.select_and_assert("/html/body/div[4]/div[2]/div/div[2]/li/div/select", "network-on-prem", "foo", "type",previous_value="network-on-prem")
