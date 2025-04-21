@@ -7938,6 +7938,8 @@ DiagramFormatPanel.prototype.init = function () {
   var list = document.createElement("ul");
   list.style.listStyleType = "none";
   list.style.padding = "0";
+  list.id = 'threagileDataAssetList';
+
 
   var items = [];
 
@@ -8136,11 +8138,245 @@ if (
         xButton.style.backgroundColor = "transparent";
         xButton.style.border = "none";
         xButton.style.cursor = "pointer";
-        xButton.addEventListener("click", function () {
-          var parentListItem = xButton.parentNode.parentNode;
-          var parentList = parentListItem.parentNode;
-          parentList.removeChild(parentListItem);
-          delete graph.model.diagramData[clonedMenu.id];
+        xButton.addEventListener('click', function(event) {
+            event.stopPropagation(); // Prevent event bubbling if necessary
+
+            // --- 1. Identify item to delete ---
+            const dataAssetKeyToDelete = clonedMenu.id.slice(0, -1);
+            const uiListItem = xButton.parentNode.parentNode; // The <li> or equivalent UI element
+            const uiList = uiListItem.parentNode; // The <ul> or equivalent UI element
+            const model = graph.model; // Get the Threagile model object
+            const dataAssetIdToDeleteID = model.threagile.getIn(["data_assets",dataAssetKeyToDelete]).toJSON().id;
+            if (!model || !model.threagile) { // Ensure model and its data exist
+                console.error("Threagile model data not found!");
+                Swal.fire({
+                     title: 'Error',
+                     text: 'Could not find Threagile model data to perform deletion.',
+                     icon: 'error'
+                });
+                return; // Stop if model data is missing
+            }
+
+            // --- 2. Find Direct Dependencies (Simplified: Data Assets using '<<') ---
+            const dependents = [];
+            const dataAssets = model.threagile.getIn(["data_assets"]).toJSON() || {}; // Access data within the model structure
+
+            for (const assetId in dataAssets) {
+                if (assetId === dataAssetKeyToDelete) continue; // Skip self
+
+                const asset = dataAssets[assetId];
+                // Check for '<<' anchor reference (string or object format)
+                if (asset && asset['<<']) {
+                    let referencedId = '';
+                    if (typeof asset['<<'] === 'string') {
+                        referencedId = asset['<<'];
+                    } else if (typeof asset['<<'] === 'object' && asset['<<'] !== null && asset['<<'].source) {
+                        referencedId = asset['<<'].source;
+                    }
+
+                    if (referencedId === dataAssetIdToDeleteID) {
+                        dependents.push({
+                            id: assetId,
+                            type: 'data_assets',
+                            // Attempt to get a user-friendly name
+                            name: asset.description || assetId
+                        });
+                    }
+                }
+            }
+
+            // --- 3. Perform Deletion (Directly or after Confirmation) ---
+
+            // Function to perform the actual deletion of one item (model + diagramData)
+            const performSingleDeletion = (itemId, itemType, diagramKey) => {
+                console.log(`Attempting to delete ${itemType}: ${itemId} (UI key: ${diagramKey})`);
+                let modelDeleted = false;
+                let uiDeleted = false;
+                const model = graph.model; // Reference the graph model
+
+                try {
+                    // --- Delete from Threagile model data ---
+                    const modelPath = [itemType, itemId];
+                    if (model.threagile.hasIn(modelPath)) {
+                        if (model.threagile.deleteIn) {
+                            model.threagile.deleteIn(modelPath);
+                            console.log(`  Successfully deleted from model: ${modelPath.join('.')}`);
+                            modelDeleted = true;
+                        } else {
+                            console.error(`  Cannot delete from model: 'deleteIn' method not available.`);
+                            // Optionally: Fallback or throw error if deleteIn is crucial
+                        }
+                    } else {
+                        console.warn(`  Skipping model deletion: ${itemId} not found in ${itemType}. It might have been deleted already.`);
+                        modelDeleted = true; // Consider it 'successfully' deleted from model perspective if not found
+                    }
+
+                    // --- Delete from diagram data if a key is provided ---
+                    // (Keep this if you store extra info in diagramData)
+                    if (diagramKey && graph.model.diagramData && graph.model.diagramData[diagramKey]) {
+                        console.log(`  Deleting ${diagramKey} from diagramData`);
+                        delete graph.model.diagramData[diagramKey];
+                    }
+
+                    // --- UI Deletion (Remove the <li>) ---
+                    const listContainer = document.getElementById('threagileDataAssetList'); // Find the <ul> using its ID
+                    if (!listContainer) {
+                         console.error("  Cannot remove UI element: Could not find the list container with id='threagileDataAssetList'.");
+                         // Cannot proceed with UI deletion if the list isn't found
+                    } else {
+                        let listItemToRemove = null;
+                        // Iterate through the <li> children of the list
+                        const listItems = listContainer.getElementsByTagName('li');
+                        for (let i = 0; i < listItems.length; i++) {
+                            const li = listItems[i];
+                            // Check if the <li> has at least two children (header div, form div)
+                            // and if the second child's ID matches the diagramKey (e.g., "AssetName:")
+                            if (li.children.length > 1 && li.children[1] && li.children[1].id === diagramKey) {
+                                listItemToRemove = li;
+                                break; // Found the correct <li>
+                            }
+                        }
+
+                        if (listItemToRemove) {
+                            listContainer.removeChild(listItemToRemove);
+                            console.log(`  Successfully removed UI list item (<li>) associated with key: ${diagramKey}`);
+                            uiDeleted = true;
+                        } else {
+                            console.warn(`  Could not find the UI list item (<li>) to remove for key: ${diagramKey}. It might have been removed already or the structure is incorrect.`);
+                            // It's often okay if the UI element is already gone.
+                        }
+                    }
+
+                    // IMPORTANT: Add graph element removal if needed
+                    // If the data asset corresponds to a visual cell on the main graph canvas:
+                    // let cellsToRemove = graph.getCellsBySpecificId(itemId); // Implement this function based on how you map model IDs to graph cells
+                    // if (cellsToRemove && cellsToRemove.length > 0) {
+                    //     graph.removeCells(cellsToRemove);
+                    //     console.log(`  Removed associated graph cell(s) for ${itemId}`);
+                    // }
+
+                } catch (error) {
+                    console.error(`Error during deletion process for ${itemType} ${itemId}:`, error);
+                    Swal.fire('Deletion Error', `Failed to fully delete ${itemId}. Check console for details.`, 'error');
+                } finally {
+                    // Optional: Log completion status
+                    if (modelDeleted && uiDeleted) {
+                         console.log(`Deletion process completed successfully for ${itemId}.`);
+                         // No explicit full refresh needed here.
+                    } else {
+                         console.warn(`Deletion process for ${itemId} might be incomplete (Model Deleted: ${modelDeleted}, UI Deleted: ${uiDeleted}).`);
+                         // Consider if a full refresh is needed ONLY if deletion partially failed
+                         // and might leave the UI inconsistent with the model.
+                         // this.format.refresh(); // Generally avoid this unless necessary
+                    }
+                }
+            };
+
+
+            if (dependents.length > 0) {
+                // --- Dependencies Found: Show Confirmation Dialog ---
+                const dependentNames = dependents.map(item => `- ${item.name} (Data Asset)`).join('<br/>');
+                const message = `The data asset "<b>${dataAssetKeyToDelete}</b>" is used as an anchor (<code><<</code>) by the following data assets:<br/><br/>${dependentNames}<br/><br/>How do you want to proceed?`;
+
+                Swal.fire({
+                    title: 'Confirm Deletion',
+                    html: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Delete Item + Dependents', // Button for deleting all
+                    confirmButtonColor: '#d33', // Red for destructive action
+                    cancelButtonText: 'Cancel',
+                    showDenyButton: true, // Add a third button
+                    denyButtonText: 'Delete Item Only(May break graph)', // Button for deleting just the target
+                    denyButtonColor: '#ffae42', // Orange/Yellow for caution
+
+                    // Add custom styling similar to your example if desired
+                     buttonsStyling: false,
+                     customClass: {
+                         confirmButton: 'swal-confirm-button-style', // Red button
+                         denyButton: 'swal-deny-button-style',     // Orange button
+                         cancelButton: 'swal-cancel-button-style',  // Default/grey button
+                         popup: 'custom-popup-style' // Your existing popup style
+                     },
+                     didRender: () => {
+                         // Ensure styles are present or add them dynamically
+                         if (!document.getElementById('swal-custom-button-styles')) {
+                             const styleTag = document.createElement('style');
+                             styleTag.id = 'swal-custom-button-styles';
+                             styleTag.innerHTML = `
+                                 .swal-confirm-button-style, .swal-deny-button-style, .swal-cancel-button-style {
+                                     color: #fff;
+                                     border: none;
+                                     border-radius: 5px;
+                                     padding: 10px 20px;
+                                     font-size: 14px;
+                                     margin: 5px;
+                                     transition: background-color 0.3s ease;
+                                 }
+                                 .swal-confirm-button-style { background-color: #d33; } /* Red */
+                                 .swal-confirm-button-style:hover { background-color: #c82333; }
+                                 .swal-deny-button-style { background-color: #ffae42; } /* Orange */
+                                 .swal-deny-button-style:hover { background-color: #f49d2c; }
+                                 .swal-cancel-button-style { background-color: #aaa; } /* Grey */
+                                 .swal-cancel-button-style:hover { background-color: #999; }
+                                 .custom-popup-style {
+                                     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                                     border-radius: 8px;
+                                     background: #f0f0f0; /* Your background */
+                                 }
+                             `;
+                             document.head.appendChild(styleTag);
+                         }
+                     }
+
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // --- User chose "Delete Item and Dependents" ---
+                        console.log("User chose to DELETE ALL (item and dependents).");
+
+                        // Delete dependent items first
+                        dependents.forEach(item => {
+                            // For dependents, we usually only delete from the model.
+                            // The diagramData key might not be easily derivable.
+                            // We also assume dependents don't have their own UI list items to remove here.
+                            performSingleDeletion(item.id, item.type, null); // No specific diagram key, no UI list item removal
+                        });
+
+                        // Now delete the original item (model + diagramData)
+                        performSingleDeletion(dataAssetKeyToDelete, 'data_assets', clonedMenu.id);
+
+                        // Update UI for the original item
+                        console.log(`Data asset ${dataAssetKeyToDelete} and its dependents deleted.`);
+
+                    } else if (result.isDenied) {
+                         // --- User chose "Delete Item Only" ---
+                         console.log("User chose to DELETE ITEM ONLY.");
+
+                         // Delete only the original item (model + diagramData)
+                         performSingleDeletion(dataAssetKeyToDelete, 'data_assets', clonedMenu.id);
+
+                         console.log(`Data asset ${dataAssetKeyToDelete} deleted. Dependents were NOT deleted.`);
+
+                    } else { // result.isDismissed (Cancel or clicked outside)
+                        console.log("User cancelled deletion.");
+                        // Do nothing
+                    }
+                });
+
+            } else {
+                // --- No Dependencies Found: Delete Directly ---
+                console.log(`No dependencies found for ${dataAssetKeyToDelete}. Deleting directly.`);
+
+                // Delete the item (model + diagramData)
+                performSingleDeletion(dataAssetKeyToDelete, 'data_assets', clonedMenu.id);
+
+                // Update UI
+                uiList.removeChild(uiListItem);
+                console.log(`Data asset ${dataAssetKeyToDelete} deleted.`);
+            }
+
+             // Optional: Trigger a model update/refresh event if your application uses one
+             // graph.model.fireEvent(new mxEventObject(mxEvent.CHANGE)); // Example for mxGraph
         });
 
         textContainer.appendChild(dataText);
@@ -9048,23 +9284,34 @@ if(parsedString.includes("$$__ERROR__$$"))
 
         list.appendChild(listItem);
       }
-      function interpolateColorForRisks(minColor, maxColor, minVal, maxVal, val) {
-        function interpolate(start, end, step) {
-            return start + (end - start) * step;
-        }
+function interpolateColorForRisks(minColor, maxColor, minVal, maxVal, val) {
+    // Normalize the value between 0 and 1
+    var step = (val - minVal) / (maxVal - minVal);
+    step = Math.max(0, Math.min(1, step));
     
-        var step = (val - minVal) / (maxVal - minVal);
-        step = Math.max(0, Math.min(1, step)); 
-        var red = interpolate(minColor[0], maxColor[0], step);
-        var green = interpolate(minColor[1], maxColor[1], step);
-        var blue = interpolate(minColor[2], maxColor[2], step);
+    // Use more muted colors
+    const lowRiskColor = [76, 175, 80];    // Muted green
+    const medRiskColor = [255, 152, 0];    // Muted amber/orange
+    const highRiskColor = [183, 28, 28];   // Deeper red
     
-        if (step > 0.5) { 
-            green *= (1 - step * 2);  
-        }
+    let red, green, blue;
     
-        return `rgb(${Math.round(red)}, ${Math.round(green)}, ${Math.round(blue)})`;
+    if (step < 0.5) {
+        // Interpolate between low and medium
+        const normalizedStep = step * 2;
+        red = Math.round(lowRiskColor[0] + normalizedStep * (medRiskColor[0] - lowRiskColor[0]));
+        green = Math.round(lowRiskColor[1] + normalizedStep * (medRiskColor[1] - lowRiskColor[1]));
+        blue = Math.round(lowRiskColor[2] + normalizedStep * (medRiskColor[2] - lowRiskColor[2]));
+    } else {
+        // Interpolate between medium and high
+        const normalizedStep = (step - 0.5) * 2;
+        red = Math.round(medRiskColor[0] + normalizedStep * (highRiskColor[0] - medRiskColor[0]));
+        green = Math.round(medRiskColor[1] + normalizedStep * (highRiskColor[1] - medRiskColor[1]));
+        blue = Math.round(medRiskColor[2] + normalizedStep * (highRiskColor[2] - medRiskColor[2]));
     }
+    
+    return `rgb(${red}, ${green}, ${blue})`;
+}
     
     
     function mapRiskLevel(value, category) {
@@ -10687,6 +10934,7 @@ CommunicationFormatPanel.prototype.init = function () {
     this.addCommunicationMenuDynamic(this.createPanel())
   );
 };
+
 CommunicationFormatPanel.prototype.addCommunicationMenuDynamic = function (
   container
 ) {
@@ -11087,6 +11335,8 @@ CommunicationFormatPanel.prototype.addCommunicationMenuDynamic = function (
                   }
                     if(property == "key")
                     {
+
+
                       restartWasm();
                       let oldassetPath = ["technical_assets", cell.source.technicalAsset.key,"communication_links",cell.communicationAssetKey];
                       let object = JSON.parse(JSON.stringify(self.editorUi.editor.graph.model.threagile.getIn(oldassetPath)));
@@ -11142,6 +11392,7 @@ CommunicationFormatPanel.prototype.addCommunicationMenuDynamic = function (
   
 
   let inputElement = document.createElement("input");
+  inputElement.id = "data_send_tagify";
   inputElement.placeholder = "Data sent";
   let cells = self.editorUi.editor.graph.getSelectionCells();
   let cell = cells && cells.length > 0 ? cells[0] : null;
@@ -11193,13 +11444,14 @@ CommunicationFormatPanel.prototype.addCommunicationMenuDynamic = function (
     }
     function removeComSent(e){
       let dataId= diagramData[e.detail.data.value].id;
-      commAsset.data_assets_sent.remove(dataId);
+      commAsset.data_assets_sent = commAsset.data_assets_sent.filter(asset => asset !== dataId);
       self.editorUi.editor.graph.model.threagile.setIn(["technical_assets", self.editorUi.editor.graph.getSelectionCells()[0].source.technicalAsset.key,"communication_links",cell.communicationAssetKey, "data_assets_sent"],commAsset.data_assets_sent );
 
     }
     tagify1.on("add", addComSent).on("remove", removeComSent);
   container.appendChild(sentSection);
   let inputElement2 = document.createElement("input");
+  inputElement.id = "receivedtagifyid";
 
   inputElement2.placeholder = "Data received";
   let receivedSecion = createSection("Data Received:");
@@ -11241,10 +11493,14 @@ CommunicationFormatPanel.prototype.addCommunicationMenuDynamic = function (
     }
     function removeComReceived(e){
       let dataId= diagramData[e.detail.data.value].id;
-      commAsset.data_assets_received.remove(dataId);
+    commAsset.data_assets_received = commAsset.data_assets_received.filter(asset => asset !== dataId);
       self.editorUi.editor.graph.model.threagile.setIn(["technical_assets", self.editorUi.editor.graph.getSelectionCells()[0].source.technicalAsset.key,"communication_links",cell.communicationAssetKey,"data_assets_received"],commAsset.data_assets_received );
 
     }
+ tagify2.DOM.scope.addEventListener('click', () => {
+      // Manually focus the internal input element
+      tagify2.DOM.input.focus();
+  });
   tagify2.on("add", addComReceived).on("remove", removeComReceived);
   container.appendChild(receivedSecion);
   return container;
@@ -11371,7 +11627,409 @@ function setCustomOption(self, parameter) {
 
 
 
+
 DiagramFormatPanel.prototype.addDataMenu = function (container,UUID = undefined) {
+/**
+ * Updates occurrences of oldId with newId within a collection (JS Array or YAML Sequence).
+ * Uses eemeli/yaml methods (.get, .set) for YAML Sequences, accessing the .value
+ * property of Scalar nodes for comparison. Modifies the collection IN PLACE.
+ *
+ * @param {Array|object} arr - The collection to update (original JS Array or YAML Sequence object from the model).
+ * @param {string} oldId - The ID string value to search for.
+ * @param {string} newId - The new ID string value to replace with.
+ * @param {string} path - The location of this collection in the model (for logging).
+ */
+function updateIdInArray(arr, oldId, newId, path) {
+    // 1. Handle null or undefined input
+    if (!arr) {
+        // console.log(`    Skipping update for path "${path}": Collection is null or undefined.`);
+        return;
+    }
+
+    let updated = false;
+
+    // 2. Handle standard JavaScript Arrays (assuming direct string values)
+    if (Array.isArray(arr)) {
+        // console.log(`    Checking JS Array at path "${path}"`);
+        for (let i = 0; i < arr.length; i++) {
+            if (arr[i] === oldId) {
+                console.log(`      Updating ID at ${path}[${i}]: "${oldId}" -> "${newId}" (JS Array)`);
+                arr[i] = newId; // Modify standard array directly
+                updated = true;
+            }
+        }
+    }
+    // 3. Handle YAML Sequences (using eemeli/yaml API)
+    //    Check for properties/methods typical of YAMLSeq from 'yaml' library.
+    else if (typeof arr.get === 'function' && typeof arr.set === 'function' && Array.isArray(arr.items)) {
+         // console.log(`    Checking YAML Sequence at path "${path}"`);
+        // Iterate using the length of the underlying items array
+        for (let i = 0; i < arr.items.length; i++) {
+            // Use .get(index) to retrieve the *Node object* (likely a Scalar) at the index
+            const currentNode = arr.get(i);
+
+            // Check if the node exists and if its 'value' property matches the old ID.
+            // Scalars store their primitive value in the 'value' property.
+            if (currentNode && typeof currentNode !== 'undefined' && currentNode === oldId) {
+                console.log(`      Updating ID at ${path}[${i}]: Node value "${oldId}" -> "${newId}" (YAML Seq)`);
+
+                // Use .set(index, newValue) to modify the YAML sequence IN PLACE.
+                // The library handles creating the appropriate Scalar node
+                // internally when given the new string value 'newId'.
+                arr.set(i, newId);
+                updated = true;
+            }
+        }
+    }
+    // 4. Handle other potential collection types (add specific checks if needed)
+    else if (typeof arr.get === 'function' && typeof arr.set === 'function' && typeof arr.size === 'number') {
+         console.warn(`    Path "${path}": Encountered map-like sequence, specific update logic may be needed.`);
+         // Add specific logic here if this case is relevant and structure is known
+         // Might involve checking node.value if .get returns nodes, or direct value if not.
+    }
+    // 5. Log if type is unsupported
+    else {
+        console.warn(`    Skipping update for path "${path}": Unsupported collection type or structure. Type: ${typeof arr}`, arr);
+        return;
+    }
+
+    // Optional: Log if no changes were made
+    // if (!updated) {
+    //     console.log(`    No updates needed in ${path} for ID "${oldId}"`);
+    // }
+}
+
+/**
+ * Traverses the YAML document/node structure and updates anchor names
+ * and the target names referenced by aliases.
+ * Relies on specific visitors for Map, Seq, Scalar, Alias.
+ * Assumes anchor names directly correspond to the old/new IDs being changed.
+ *
+ * @param {YAML.Document | YAML.Node} docOrNode - The YAML document or node to traverse.
+ * @param {string} oldAnchorName - The anchor name to find and replace (e.g., the old ID).
+ * @param {string} newAnchorName - The new anchor name to use (e.g., the new ID).
+ * @returns {{anchorUpdated: boolean, aliasesUpdatedCount: number}} - Result object
+ */
+function updateAnchorsAndAliases(docOrNode, oldAnchorName, newAnchorName) {
+    console.log(`>>> Starting anchor/alias update: &${oldAnchorName} / *${oldAnchorName} -> &${newAnchorName} / *${newAnchorName}`);
+    let result = {
+        anchorUpdated: false,
+        aliasesUpdatedCount: 0
+    };
+
+    YAML.visit(docOrNode, {
+        // Visitor for Map nodes
+        Map: (key, node, path) => { // node here SHOULD be a YAMLMap instance
+             // Extra check for safety, though likely redundant with specific visitor
+            if (!(node instanceof YAML.YAMLMap)) {
+                // console.warn(`Map visitor received non-YAMLMap node type: ${node?.constructor?.name}`);
+                 return undefined;
+            }
+             // Check the Map node itself for the anchor
+            if (node.anchor === oldAnchorName) {
+                const pathStr = path.map(p => p?.key?.toString() ?? p?.value?.toString() ?? '?').join('.');
+                console.log(`  Updating anchor definition on Map at path [${pathStr || 'root'}]: &${node.anchor} -> &${newAnchorName}`);
+                node.anchor = newAnchorName; // Direct property access
+                result.anchorUpdated = true;
+                // Don't skip children - a map could contain another anchored item
+                // return YAML.visit.SKIP; // Return SKIP only if we are *certain* no nested anchors with the same name exist
+            }
+            return undefined; // Allow visitor to descend into items
+        },
+        // Visitor for Sequence nodes
+        Seq: (key, node, path) => { // node here SHOULD be a YAMLSeq instance
+            if (!(node instanceof YAML.YAMLSeq)) {
+                 // console.warn(`Seq visitor received non-YAMLSeq node type: ${node?.constructor?.name}`);
+                 return undefined;
+            }
+             // Check the Sequence node itself for the anchor
+             if (node.anchor === oldAnchorName) {
+                const pathStr = path.map(p => p?.key?.toString() ?? p?.value?.toString() ?? '?').join('.');
+                console.log(`  Updating anchor definition on Sequence at path [${pathStr || 'root'}]: &${node.anchor} -> &${newAnchorName}`);
+                node.anchor = newAnchorName; // Direct property access
+                result.anchorUpdated = true;
+                // return YAML.visit.SKIP; // Don't skip children
+            }
+             return undefined; // Allow visitor to descend into items
+        },
+        // Visitor for Scalar nodes
+        Scalar: (key, node, path) => { // node here SHOULD be a Scalar instance
+             if (!(node instanceof YAML.Scalar)) {
+                 // console.warn(`Scalar visitor received non-Scalar node type: ${node?.constructor?.name}`);
+                 return undefined;
+             }
+            // Check the Scalar node itself for the anchor
+            if (node.anchor === oldAnchorName) {
+                const pathStr = path.map(p => p?.key?.toString() ?? p?.value?.toString() ?? '?').join('.');
+                console.log(`  Updating anchor definition on Scalar at path [${pathStr || 'root'}]: &${node.anchor} -> &${newAnchorName}`);
+                node.anchor = newAnchorName; // Direct property access
+                result.anchorUpdated = true;
+                // Scalars have no children to visit, so SKIP is implicit
+                // return YAML.visit.SKIP;
+            }
+             return undefined;
+        },
+
+        // Specific visitor for Alias nodes
+        Alias: (key, node, path) => { // node here SHOULD be an Alias instance
+            if (!(node instanceof YAML.Alias)) {
+                 // console.warn(`Alias visitor received non-Alias node type: ${node?.constructor?.name}`);
+                 return undefined;
+            }
+            // Check the source property of the Alias node
+            if (node.source === oldAnchorName) {
+                const pathStr = path.map(p => p?.key?.toString() ?? p?.value?.toString() ?? '?').join('.');
+                console.log(`  Updating alias reference at path [${pathStr || 'root'}]: *${node.source} -> *${newAnchorName}`);
+                node.source = newAnchorName; // Direct property access
+                result.aliasesUpdatedCount++;
+            }
+            // Aliases have no children, SKIP is implicit
+            // return YAML.visit.SKIP;
+             return undefined;
+        }
+    });
+
+    // Final logging (unchanged from previous versions)
+    if (!result.anchorUpdated && result.aliasesUpdatedCount === 0) {
+        console.log(`  Note: Anchor '&${oldAnchorName}' definition not found, and no aliases '*${oldAnchorName}' found.`);
+    } else {
+         if (!result.anchorUpdated) {
+             console.log(`  Note: Anchor '&${oldAnchorName}' definition not found or didn't need update.`);
+         }
+         if (result.aliasesUpdatedCount > 0) {
+            console.log(`  Updated ${result.aliasesUpdatedCount} alias(es) referencing '*${oldAnchorName}'.`);
+         } else {
+            console.log(`  No aliases referencing '*${oldAnchorName}' found.`);
+         }
+    }
+     console.log(`>>> Anchor/alias update finished for ${oldAnchorName}.`);
+     return result;
+}
+/**
+ * Updates all known references to a data asset ID throughout the Threagile model.
+ * Handles technical assets, top-level communication links, nested communication links,
+ * and risk tracking keys, correctly iterating over YAML object structures.
+ *
+ * @param {object} model - The parsed Threagile model object (likely a YAML Document or YAMLMap).
+ * @param {string} oldId - The data asset ID to replace.
+ * @param {string} newId - The new data asset ID.
+ */
+function updateReferences(model, oldId, newId) {
+    console.log(`>>> Starting reference update for Data Asset: ${oldId} -> ${newId}`);
+
+    // Helper to check if a value is a YAML Map or Sequence we can work with
+    const isYAMLCollection = (val) => val && (typeof val.get === 'function' || Array.isArray(val.items));
+
+    // --- 1. Update Technical Assets ---
+    if (model.has("technical_assets")) {
+        const techAssetsYAML = model.get("technical_assets"); // Get the YAMLMap/Object
+
+        // Check if it's iterable (might be null or not the expected type)
+        if (techAssetsYAML && typeof techAssetsYAML.toJSON === 'function') {
+            const techAssetsJS = techAssetsYAML.toJSON(); // Convert to plain JS for iteration keys
+
+            Object.keys(techAssetsJS).forEach(assetKey => { // Iterate using keys from JS version
+                console.log(`  Checking Technical Asset: [${assetKey}]`);
+                const assetYAML = techAssetsYAML.get(assetKey); // <<< Get the ORIGINAL YAML object for this asset
+
+                if (!assetYAML) {
+                     console.warn(`    Skipping asset [${assetKey}]: Could not retrieve original YAML object.`);
+                     return; // Continue to next asset key
+                }
+
+                // 1a. Check data processed/stored (pass the original YAML sequence/array)
+                if (assetYAML.has("data_assets_processed")) {
+                    const processedSeq = assetYAML.get("data_assets_processed");
+                    if (isYAMLCollection(processedSeq)) {
+                        updateIdInArray(processedSeq, oldId, newId, `technical_assets[${assetKey}].data_assets_processed`);
+                    }
+                }
+                if (assetYAML.has("data_assets_stored")) {
+                     const storedSeq = assetYAML.get("data_assets_stored");
+                     if (isYAMLCollection(storedSeq)) {
+                         updateIdInArray(storedSeq, oldId, newId, `technical_assets[${assetKey}].data_assets_stored`);
+                     }
+                }
+
+                // 1b. Check nested communication links
+                if (assetYAML.has("communication_links")) {
+                    const nestedCommLinksYAML = assetYAML.get("communication_links"); // Original YAML Map/Object for links
+
+                    if (nestedCommLinksYAML && typeof nestedCommLinksYAML.toJSON === 'function') {
+                        const nestedCommLinksJS = nestedCommLinksYAML.toJSON(); // JS version for keys
+                         console.log(`    Checking Nested Communication Links within [${assetKey}]...`);
+
+                        Object.keys(nestedCommLinksJS).forEach(linkKey => {
+                             console.log(`      Checking Nested Link: [${linkKey}]`);
+                             const linkYAML = nestedCommLinksYAML.get(linkKey); // <<< Get ORIGINAL YAML Link object
+
+                             if (!linkYAML) {
+                                console.warn(`      Skipping nested link [${linkKey}]: Could not retrieve original YAML object.`);
+                                return; // Continue to next link key
+                             }
+
+                             if (linkYAML.has("data_assets_sent")) {
+                                 const sentSeq = linkYAML.get("data_assets_sent");
+                                 if (isYAMLCollection(sentSeq)) {
+                                     updateIdInArray(sentSeq, oldId, newId, `technical_assets[${assetKey}].communication_links[${linkKey}].data_assets_sent`);
+                                 }
+                             }
+                             if (linkYAML.has("data_assets_received")) {
+                                 const receivedSeq = linkYAML.get("data_assets_received");
+                                  if (isYAMLCollection(receivedSeq)) {
+                                     updateIdInArray(receivedSeq, oldId, newId, `technical_assets[${assetKey}].communication_links[${linkKey}].data_assets_received`);
+                                  }
+                             }
+                        });
+                    }
+                }
+            });
+        } else {
+             console.warn("Could not iterate over 'technical_assets': Not a recognized YAML collection or is null.");
+        }
+    } else {
+        console.log("  No 'technical_assets' section found.");
+    }
+
+    // --- 2. Update TOP-LEVEL Communication Links ---
+    if (model.has("communication_links")) {
+        const topLevelCommLinksYAML = model.get("communication_links"); // YAML Map/Object
+
+        if (topLevelCommLinksYAML && typeof topLevelCommLinksYAML.toJSON === 'function') {
+             const topLevelCommLinksJS = topLevelCommLinksYAML.toJSON(); // JS version for keys
+             console.log(`  Checking Top-Level Communication Links...`);
+
+             Object.keys(topLevelCommLinksJS).forEach(linkKey => {
+                 console.log(`    Checking Top-Level Link: [${linkKey}]`);
+                 const linkYAML = topLevelCommLinksYAML.get(linkKey); // <<< Get ORIGINAL YAML Link object
+
+                  if (!linkYAML) {
+                    console.warn(`    Skipping top-level link [${linkKey}]: Could not retrieve original YAML object.`);
+                    return; // Continue to next link key
+                  }
+
+                 if (linkYAML.has("data_assets_sent")) {
+                     const sentSeq = linkYAML.get("data_assets_sent");
+                     if (isYAMLCollection(sentSeq)) {
+                         updateIdInArray(sentSeq, oldId, newId, `communication_links[${linkKey}].data_assets_sent`);
+                     }
+                 }
+                 if (linkYAML.has("data_assets_received")) {
+                      const receivedSeq = linkYAML.get("data_assets_received");
+                      if (isYAMLCollection(receivedSeq)) {
+                         updateIdInArray(receivedSeq, oldId, newId, `communication_links[${linkKey}].data_assets_received`);
+                      }
+                 }
+             });
+        } else {
+             console.warn("Could not iterate over 'communication_links': Not a recognized YAML collection or is null.");
+        }
+    } else {
+        console.log("  No top-level 'communication_links' section found.");
+    }
+
+    // --- 3. Update Risk Tracking Keys ---
+    if (model.has("risk_tracking")) {
+        console.log("  Checking 'risk_tracking' keys...");
+    } else {
+        console.log("  No 'risk_tracking' section found.");
+    }
+
+    console.log(`>>> Reference update finished for ${oldId} -> ${newId}`);
+}
+/**
+ * Renames a key within a YAMLMap node inside a YAML Document by replacing the key node.
+ * Assumes the key is a simple Scalar node.
+ * Designed for browser environments where YAML is loaded as a module.
+ *
+ * @param {YAML.Document} doc The YAML Document object.
+ * @param {Array<string|number>} mapPath Path to the target YAMLMap within the document (e.g., ['data_assets']).
+ * @param {string} oldKey The current string value of the key to rename.
+ * @param {string} newKey The desired new string value for the key.
+ * @param {object} YAML The imported YAML library object (must be passed in).
+ * @returns {boolean} True if the key was successfully renamed, false otherwise.
+ */
+function renameYamlMapKey(doc, mapPath, oldKey, newKey, YAML) {
+    // --- Basic Input Validation ---
+    if (!YAML || typeof YAML.isMap !== 'function') {
+        console.error("Error: Valid YAML library object must be provided as the fifth argument.");
+        return false;
+    }
+    if (!doc || typeof doc.getIn !== 'function' || typeof doc.createNode !== 'function') { // Added createNode check
+        console.error("Error: Invalid YAML Document object provided (first argument). Must have getIn and createNode methods.");
+        return false;
+    }
+    if (!Array.isArray(mapPath)) {
+        console.error("Error: mapPath (second argument) must be an array.");
+        return false;
+    }
+    if (typeof oldKey !== 'string' || oldKey === '') {
+        console.error("Error: oldKey (third argument) must be a non-empty string.");
+        return false;
+    }
+    if (typeof newKey !== 'string' || newKey === '') {
+        console.error("Error: newKey (fourth argument) must be a non-empty string.");
+        return false;
+    }
+     if (oldKey === newKey) {
+         console.warn("Warning: oldKey and newKey are the same. No rename needed.");
+         return true;
+    }
+
+    // --- Get the Target Map Node ---
+    const targetMap = doc.getIn(mapPath, true); // true -> get the Node
+
+    // --- Validate the Target Node ---
+    if (!targetMap) {
+        console.error(`Error: Could not find a node at path: [${mapPath.join(', ')}]`);
+        return false;
+    }
+    if (!YAML.isMap(targetMap)) {
+        const type = targetMap?.constructor?.name ?? typeof targetMap;
+        console.error(`Error: The node at path [${mapPath.join(', ')}] is not a YAMLMap. Found type: ${type}`);
+        return false;
+    }
+
+    // --- Check if the New Key Already Exists ---
+    // Note: This check might be less reliable if keys are complex nodes,
+    // but should work for simple scalar keys compared against strings.
+    if (targetMap.has(newKey)) {
+        console.warn(`Warning: The new key "${newKey}" already exists in the map at path [${mapPath.join(', ')}]. Renaming aborted.`);
+        return false;
+    }
+
+    // --- Find and Rename the Key ---
+    let foundAndRenamed = false;
+    for (let i = 0; i < targetMap.items.length; i++) {
+        const pair = targetMap.items[i]; // Pair { key: Node, value: Node }
+
+        // Check if the key exists, is a Scalar, and its value matches the oldKey
+        if (pair.key && YAML.isScalar(pair.key) && pair.key.value === oldKey) {
+
+            // --- THIS IS THE MODIFIED RENAMING STEP ---
+            // 1. Create a *new* Scalar node for the new key string.
+            //    Using doc.createNode ensures it belongs to the document's context.
+            const newKeyNode = doc.createNode(newKey);
+
+            // 2. Replace the *entire* key node within the Pair object.
+            pair.key = newKeyNode;
+            // --- RENAMING DONE ---
+
+            console.log(`Successfully replaced key node "${oldKey}" with new key node "${newKey}" in map at path [${mapPath.join(', ')}].`);
+            foundAndRenamed = true;
+            break; // Exit loop
+        }
+    }
+
+    // --- Report if the Key Wasn't Found ---
+    if (!foundAndRenamed) {
+        console.warn(`Warning: Key "${oldKey}" was not found in the map at path [${mapPath.join(', ')}].`);
+        return false;
+    }
+
+    return true; // Indicate success
+}
+
   var self = this;
   let uniqueID;
   if(UUID == undefined){
@@ -11599,14 +12257,41 @@ DiagramFormatPanel.prototype.addDataMenu = function (container,UUID = undefined)
                   if (newValue != null) {
                     if (p === "key") {
                         
-                        restartWasm();
+                        /*
                         let oldassetPath = ["data_assets", uniqueID];
+                        let id =self.editorUi.editor.graph.model.threagile.getIn(oldassetPath).toJSON().id;
                         let object = JSON.parse(JSON.stringify(self.editorUi.editor.graph.model.threagile.getIn(oldassetPath)));
                         self.editorUi.editor.graph.model.threagile.deleteIn(oldassetPath);
                         let newassetPath = ["data_assets", newValue];
                         self.editorUi.editor.graph.model.threagile.setIn(newassetPath, object);
                         let restoreIntegrity = self.editorUi.editor.graph.model.threagile.toString();
                         self.editorUi.editor.graph.model.threagile =  YAML.parseDocument(restoreIntegrity);
+
+                        */
+                        let doc = self.editorUi.editor.graph.model.threagile;
+
+
+                        let dataAssetsPath = ['data_assets'];
+
+                        const dataAssetsMap = doc.getIn(dataAssetsPath, true); // true -> get the Node
+                        if (doc && typeof doc.getIn === 'function') {
+
+                        // Call the renaming function, passing the required arguments INCLUDING the YAML object
+                        const success = renameYamlMapKey(doc, dataAssetsPath, uniqueID, newValue, YAML);
+
+                            if (success) {
+                                console.log("Rename successful. Updated YAML document:");
+                                console.log(doc.toString()); // Use toString() to see the updated YAML string
+                                // You might need to update your UI or save the changes here
+                            } else {
+                                console.log("Rename failed. Check warnings/errors above.");
+                            }
+
+                        } else {
+                            console.error("The 'doc' object is not a valid YAML Document.");
+                        }
+
+                        restartWasm();
                         let targetElement = evt.target.parentNode.parentNode.parentNode.parentNode;
                         const graphvar = self.editorUi.editor.graph;
                         // Start a change transaction
@@ -11627,7 +12312,14 @@ DiagramFormatPanel.prototype.addDataMenu = function (container,UUID = undefined)
                         }
 
                         graphvar.refresh(); 
-                    } else {
+                    }else if(p === "id"){
+                      let id = self.graph.model.threagile.getIn(["data_assets", str, p], newValue).toJSON();
+                      self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
+                      updateReferences(self.editorUi.editor.graph.model.threagile, id, newValue);
+
+                    }
+
+                      else {
                       self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
                     }
                   }
@@ -12283,15 +12975,24 @@ let button = mxUtils.button(
                                 restartWasm();
                                 let oldassetPath = ["technical_assets", assetId.key];
                                 let cell = self.editorUi.editor.graph.getSelectionCell();
+                                let edges = self.editorUi.editor.graph.getEdges(cell, null, false, true, true);
                                 let object = JSON.parse(JSON.stringify(self.editorUi.editor.graph.model.threagile.getIn(oldassetPath)));
                                 self.editorUi.editor.graph.model.threagile.deleteIn(oldassetPath);
                                 cell.technicalAsset.key=adjustedValue;
+
+
 
                                 let newassetPath = ["technical_assets", assetId.key];
                                 self.editorUi.editor.graph.model.threagile.setIn(newassetPath, object);
                                 cell.value= adjustedValue;
                                 let restoreIntegrity = self.editorUi.editor.graph.model.threagile.toString();
                                 self.editorUi.editor.graph.model.threagile =  YAML.parseDocument(restoreIntegrity);
+                                edges.forEach(function (edge) {
+                                let newassetPathCom = ["technical_assets", assetId.key, "communication_links", edge.communicationAssetKey];
+                                    edge.communicationAsset= self.editorUi.editor.graph.model.threagile.getIn(newassetPathCom);
+
+                                });
+
 
                               }else{
                                 let assetPath = ["technical_assets", assetId.key,property];
@@ -12567,7 +13268,7 @@ function onRemoveTagPro(e){
   if (index > -1) {
     dataAssetsProcessed.splice(index, 1);
   }
-  model.setIn(["technical_assets", proassetKey, "data_assets_processed"], dataAssetsProcessed);
+  model.setIn(["technical_assets", proassetKey.key, "data_assets_processed"], dataAssetsProcessed);
 }
 //Tagify2
 function onRemoveTagStored(e) {

@@ -889,16 +889,16 @@ EditorUi = function (editor, container, lightbox) {
                 if(typeof asset.toJSON === 'function') {
                   asset= asset.toJSON();
                   }
-              if (asset.communication_link){
-               self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.source.technicalAsset.key , "communication_link", cell.communicationAssetKey])
+              if (asset.communication_links){
+               self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.source.technicalAsset.key , "communication_links", cell.communicationAssetKey])
                 cell.communicationAssetKey = undefined;
                 cell.communicationAsset = undefined;
               }
           }
             } else if (graph.getModel().isVertex(cell)) {
               console.log('An node was deleted:', cell);
-              if(cell.source){
-              self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.source.technicalAsset.key]);
+              if(cell.technicalAsset){
+              self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.technicalAsset.key]);
             }
             else{
               console.log("Removed without source");
