@@ -4,12 +4,164 @@
 /**
  * Constructs a new graph editor
  */
+
+      
+/**
+ * Custom undoable edit for managing threagile data alongside cell removals.
+ * @param {EditorUi} editorUi The EditorUi instance.
+ * @param {Array<{cell: mxCell, path: Array, data: any}>} removedData An array of objects, each containing the cell removed,
+ *        the path in the threagile model where its data was, and a *copy* of the data itself.
+ */
+function ThreagileDataRemoveEdit(editorUi, removedData) {
+  this.editorUi = editorUi;
+  this.removedData = removedData; // [{ cellId: '...', isEdge: true, path: [...], data: {...} }, ...]
+  this.changeSource = editorUi.editor.graph; // Important for identifying the source of the change
+
+  // Ensure data is properly copied (assuming Immutable.js or plain objects)
+  this.removedData.forEach(item => {
+    if (item.data && typeof item.data.toJSON === 'function') {
+        // Handle Immutable.js Maps/Lists etc.
+        item.data = JSON.parse(JSON.stringify(item.data.toJSON()));
+    } else if (item.data) {
+        // Handle plain JS objects/arrays
+        item.data = JSON.parse(JSON.stringify(item.data));
+    }
+    // Store cell ID for potential re-association if needed, though path/data is primary
+    item.cellId = item.cell.getId();
+    item.isEdge = this.editorUi.editor.graph.getModel().isEdge(item.cell);
+    item.isVertex = this.editorUi.editor.graph.getModel().isVertex(item.cell);
+     // We might need source/target info for edges if restoring requires linking logic later
+    if (item.isEdge) {
+        item.sourceId = item.cell.source ? item.cell.source.getId() : null;
+        item.targetId = item.cell.target ? item.cell.target.getId() : null;
+    }
+  });
+}
+
+/**
+ * Executes the edit - removes data from the threagile model.
+ */
+ThreagileDataRemoveEdit.prototype.execute = function() {
+  var model = this.editorUi.editor.graph.model;
+  // On execute/redo, we delete the data from the live model
+  this.removedData.forEach(item => {
+    try {
+        console.log('ThreagileDataRemoveEdit execute: Deleting at path:', item.path);
+        // Check if the path still exists before attempting deletion (might have been removed by another operation)
+        if (model.threagile.hasIn(item.path)) {
+           model.threagile = model.threagile.deleteIn(item.path);
+           console.log('ThreagileDataRemoveEdit execute: Successfully deleted.');
+        } else {
+           console.log('ThreagileDataRemoveEdit execute: Path already gone:', item.path);
+        }
+        // Clear potentially stale references on the cell object (which might be restored visually)
+        if (item.isEdge) {
+             item.cell.communicationAssetKey = undefined;
+             item.cell.communicationAsset = undefined;
+        } else if (item.isVertex) {
+             item.cell.technicalAsset = undefined;
+             // cell.technicalAssetKey is usually just technicalAsset.key
+        }
+    } catch (e) {
+      console.error('Error deleting threagile data during redo/execute:', e, 'Path:', item.path);
+      // Optionally re-throw or handle error
+    }
+  });
+   // Trigger a generic update if needed, though model changes should handle it
+   // this.editorUi.editor.graph.refresh();
+};
+
+/**
+ * Undoes the edit - restores data to the threagile model.
+ */
+ThreagileDataRemoveEdit.prototype.undo = function() {
+  var model = this.editorUi.editor.graph.model;
+  // On undo, we restore the data
+  this.removedData.forEach(item => {
+    try {
+      console.log('ThreagileDataRemoveEdit undo: Restoring at path:', item.path, 'Data:', item.data);
+      // Use setIn to restore the data. This assumes item.data is in the correct plain JS format.
+      // If using Immutable.js, you might need Immutable.fromJS(item.data)
+      let dataToRestore = item.data;
+      // If your model expects Immutable objects, convert back:
+      // try { // Be defensive against non-JSON or complex structures if necessary
+      //    dataToRestore = Immutable.fromJS(item.data);
+      // } catch(e) {
+      //    console.error("Failed to convert stored data back to Immutable for path", item.path, e);
+      //    dataToRestore = item.data; // Fallback or handle error
+      // }
+
+      // Restore the data in the threagile model
+      model.threagile = model.threagile.setIn(item.path, dataToRestore);
+
+      // --- Re-associate restored data with the visually restored cell ---
+      // The cell object `item.cell` should be the one restored by mxGraph's undo.
+      // We need to find it again if the reference isn't stable, using item.cellId.
+      var graph = this.editorUi.editor.graph;
+      var restoredCell = graph.model.getCell(item.cellId); // Get the current cell object
+
+      if (restoredCell) {
+          if (item.isEdge) {
+              // Re-attach the data/key. The data itself is now live in model.threagile again.
+              restoredCell.communicationAssetKey = item.path[item.path.length -1]; // The key is the last part of the path
+              // Find the restored data object in the live model to re-link
+              restoredCell.communicationAsset = model.threagile.getIn(item.path);
+              console.log('ThreagileDataRemoveEdit undo: Re-associated edge', restoredCell.id, 'with key', restoredCell.communicationAssetKey);
+          } else if (item.isVertex) {
+              // Re-attach the data/key.
+              // Find the restored data object in the live model to re-link
+              restoredCell.technicalAsset = model.threagile.getIn(item.path);
+              // The key should be part of the restored data, verify if needed:
+              // restoredCell.technicalAsset.key should match item.path[item.path.length - 1]
+               console.log('ThreagileDataRemoveEdit undo: Re-associated vertex', restoredCell.id, 'with asset', restoredCell.technicalAsset);
+          }
+      } else {
+           console.warn('ThreagileDataRemoveEdit undo: Could not find restored cell with ID', item.cellId, 'to re-associate data.');
+      }
+
+      console.log('ThreagileDataRemoveEdit undo: Successfully restored.');
+    } catch (e) {
+      console.error('Error restoring threagile data during undo:', e, 'Path:', item.path);
+      // Optionally re-throw or handle error
+    }
+  });
+
+  // Trigger a generic update if needed
+  // this.editorUi.editor.graph.refresh();
+};
+
+// Register the codec for the custom edit if you need serialization (often not needed for runtime undo)
+// This part is complex and might not be necessary unless you save/load the undo history itself.
+/*
+(function() {
+    var codec = new mxObjectCodec(new ThreagileDataRemoveEdit(null, []), ['editorUi']); // Exclude editorUi from encoding
+
+    codec.afterDecode = function(dec, node, obj) {
+        // Restore editorUi reference after decoding if needed, e.g., via a global lookup
+        // obj.editorUi = GlobalEditorUiLookup.getInstance();
+        // Decode removedData structure manually if it's complex
+        // This is highly dependent on how removedData is structured and stored in XML
+        return obj;
+    };
+
+    codec.beforeEncode = function(enc, obj, node) {
+        // Customize encoding if needed, e.g., convert removedData to a serializable format
+        return node;
+    };
+
+    mxCodecRegistry.register(codec);
+})();
+*/
+
+
 EditorUi = function (editor, container, lightbox) {
   mxEventSource.call(this);
 
   this.destroyFunctions = [];
   this.editor = editor || new Editor();
   this.container = container || document.body;
+  let undoManager = this.editor.undoManager
+  let self = this; // Reference to EditorUi instance
 
   var graph = this.editor.graph;
   graph.lightbox = lightbox;

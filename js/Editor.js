@@ -521,7 +521,7 @@ Editor.prototype.editAsNew = function (xml, title) {
  */
 Editor.prototype.createGraph = function (themes, model) {
   var graph = new Graph(null, model, null, null, themes);
-  graph.transparentBackground = false;
+  graph.transparentBackground = true;//false;
 
   // Opens all links in a new window while editing
   if (!this.chromeless) {
@@ -537,13 +537,13 @@ Editor.prototype.createGraph = function (themes, model) {
  * Sets the XML node for the current diagram.
  */
 Editor.prototype.resetGraph = function () {
-  this.graph.gridEnabled = !this.isChromelessView() || urlParams["grid"] == "1";
+  this.graph.gridEnabled = false;//!this.isChromelessView() || urlParams["grid"] == "1";
   this.graph.graphHandler.guidesEnabled = true;
   this.graph.setTooltips(true);
   this.graph.setConnectable(true);
   this.graph.foldingEnabled = true;
   this.graph.scrollbars = this.graph.defaultScrollbars;
-  this.graph.pageVisible = this.graph.defaultPageVisible;
+  this.graph.pageVisible = false;//this.graph.defaultPageVisible;
   this.graph.pageBreaksVisible = this.graph.pageVisible;
   this.graph.preferPageSize = this.graph.pageBreaksVisible;
   this.graph.background = null;

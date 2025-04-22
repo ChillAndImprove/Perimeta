@@ -7927,6 +7927,271 @@ DiagramFormatPanel.prototype.showBackgroundImageOption = true;
  * Adds the label menu items to the given menu and parent.
  */
 DiagramFormatPanel.prototype.init = function () {
+/**
+ * Removes occurrences of a specific ID from a collection (JS Array or YAML Sequence).
+ * Uses eemeli/yaml methods (.get, .delete) for YAML Sequences, accessing the .value
+ * property of Scalar nodes for comparison. Modifies the collection IN PLACE.
+ *
+ * @param {Array|object} arr - The collection to modify (original JS Array or YAML Sequence object from the model).
+ * @param {string} idToRemove - The ID string value to search for and remove.
+ * @param {string} path - The location of this collection in the model (for logging).
+ */
+function removeIdFromArray(arr, idToRemove, path) {
+    // 1. Handle null or undefined input
+    if (!arr) {
+        // console.log(`    Skipping removal for path "${path}": Collection is null or undefined.`);
+        return;
+    }
+
+    let removed = false;
+
+    // 2. Handle standard JavaScript Arrays (assuming direct string values)
+    if (Array.isArray(arr)) {
+        // console.log(`    Checking JS Array at path "${path}" for removal of "${idToRemove}"`);
+        // Iterate backwards to safely remove elements using splice
+        for (let i = arr.length - 1; i >= 0; i--) {
+            if (arr[i] === idToRemove) {
+                console.log(`      Removing ID at ${path}[${i}]: "${idToRemove}" (JS Array)`);
+                arr.splice(i, 1); // Remove element at index i
+                removed = true;
+            }
+        }
+    }
+    // 3. Handle YAML Sequences (using eemeli/yaml API)
+    //    Check for properties/methods typical of YAMLSeq from 'yaml' library.
+    else if (typeof arr.get === 'function' && typeof arr.delete === 'function' && Array.isArray(arr.items)) {
+        // console.log(`    Checking YAML Sequence at path "${path}" for removal of "${idToRemove}"`);
+        // Iterate backwards to safely remove elements using .delete(index)
+        // Use the length of the underlying items array for the loop boundary
+        for (let i = arr.items.length - 1; i >= 0; i--) {
+            // Use .get(index) to retrieve the *Node object* or value
+            const currentNodeOrValue = arr.get(i);
+
+            // Determine the actual value to compare
+            // Check if it's a Node with a 'value' property (like Scalar) or just the value itself
+            let currentValue;
+            if (currentNodeOrValue && typeof currentNodeOrValue === 'object' && currentNodeOrValue.hasOwnProperty('value')) {
+                // It's likely a Scalar or similar Node from 'yaml'
+                 currentValue = currentNodeOrValue.value;
+                 // Ensure we are comparing against the actual value, not the Node itself
+                 // The original code had a potential bug here: it compared currentNode === oldId
+                 // which might fail if currentNode is a Scalar object. It should have been currentNode.value === oldId
+            } else {
+                // It might be a direct value if the sequence holds primitives directly
+                // or if .get() resolved the node to its value automatically in some cases.
+                currentValue = currentNodeOrValue;
+            }
+
+
+            // Compare the determined value with the ID to remove
+            if (currentValue === idToRemove) {
+                console.log(`      Removing ID at ${path}[${i}]: Value "${idToRemove}" (YAML Seq)`);
+
+                // Use .delete(index) to remove the item from the YAML sequence IN PLACE.
+                arr.delete(i);
+                removed = true;
+            }
+        }
+    }
+     // 4. Handle other potential collection types (add specific checks if needed)
+     //    Attempting generic sequence removal if API matches
+     else if (typeof arr.get === 'function' && typeof arr.delete === 'function' && typeof arr.size === 'number') {
+         console.warn(`    Path "${path}": Attempting removal in map-like sequence for "${idToRemove}". Logic assumes sequence behavior.`);
+          // Iterate backwards assuming sequence-like indexing
+          // Note: .size might not reflect indices directly if keys aren't 0..N-1
+          // This part is heuristic and might fail depending on the actual object type.
+          // A more robust solution would require knowing the exact type or structure.
+          // We'll iterate based on presumed indices up to size - 1 if possible,
+          // but a safer approach might be needed. Let's stick to the known .items.length if available,
+          // otherwise this branch might be unreliable for removal.
+          // *Correction*: The original logic checked arr.items.length. If that's not present, iterating
+          // based on .size for deletion by index is risky. Let's refine this branch.
+          // *Revision*: If it has get/delete/size but not items, it's less likely a standard sequence.
+          // Maybe iterate keys if possible? Or just log a more specific warning.
+          // Let's keep the warning strong and avoid potentially incorrect deletions.
+         console.warn(`    Path "${path}": Encountered map-like structure with get/delete/size but no 'items' array. Cannot reliably perform indexed removal. Skipping removal for this specific type.`);
+         // Removed the potentially incorrect backwards loop for this case.
+     }
+    // 5. Log if type is unsupported
+    else {
+        console.warn(`    Skipping removal for path "${path}": Unsupported collection type or structure for removal. Type: ${typeof arr}`, arr);
+        return;
+    }
+
+    // Optional: Log if no changes were made
+    // if (!removed) {
+    //     console.log(`    No instances of "${idToRemove}" found to remove in ${path}`);
+    // }
+}
+/**
+ * Removes all known references to a data asset ID from relevant arrays/sequences
+ * throughout the Threagile model.
+ * Handles technical assets (processed/stored data), top-level communication links (sent/received data),
+ * and nested communication links (sent/received data). Modifies the model IN PLACE.
+ * NOTE: Does not currently modify risk_tracking entries.
+ *
+ * @param {object} model - The parsed Threagile model object (likely a YAML Document or YAMLMap).
+ * @param {string} idToRemove - The data asset ID to remove from arrays/sequences.
+ */
+function removeReferences(model, idToRemove) {
+    console.log(`>>> Starting reference removal for Data Asset ID: ${idToRemove}`);
+
+    // Helper to check if a value is a YAML Sequence or JS Array we can work with
+    const isProcessableArray = (val) => {
+        // Check for standard JS Array
+        if (Array.isArray(val)) {
+            return true;
+        }
+        // Check for eemeli/yaml Sequence (needs .get and .delete)
+        if (val && typeof val.get === 'function' && typeof val.delete === 'function' && Array.isArray(val.items)) {
+            return true;
+        }
+        return false;
+    };
+
+    // --- 1. Process Technical Assets ---
+    if (model.has("technical_assets")) {
+        const techAssetsYAML = model.get("technical_assets"); // Get the YAMLMap/Object
+
+        // Check if it's iterable (might be null or not the expected type)
+        if (techAssetsYAML && typeof techAssetsYAML.toJSON === 'function') {
+            const techAssetsJS = techAssetsYAML.toJSON(); // Convert to plain JS for iteration keys
+
+            Object.keys(techAssetsJS).forEach(assetKey => { // Iterate using keys from JS version
+                console.log(`  Checking Technical Asset: [${assetKey}] for removal of "${idToRemove}"`);
+                const assetYAML = techAssetsYAML.get(assetKey); // <<< Get the ORIGINAL YAML object for this asset
+
+                if (!assetYAML) {
+                     console.warn(`    Skipping asset [${assetKey}]: Could not retrieve original YAML object.`);
+                     return; // Continue to next asset key
+                }
+
+                // 1a. Check data processed/stored (pass the original YAML sequence/array)
+                if (assetYAML.has("data_assets_processed")) {
+                    const processedSeq = assetYAML.get("data_assets_processed");
+                    if (isProcessableArray(processedSeq)) {
+                        // Use removeIdFromArray instead of updateIdInArray
+                        removeIdFromArray(processedSeq, idToRemove, `technical_assets[${assetKey}].data_assets_processed`);
+                    } else if (processedSeq) {
+                        console.warn(`    Skipping removal in technical_assets[${assetKey}].data_assets_processed: Not a processable array/sequence.`);
+                    }
+                }
+                if (assetYAML.has("data_assets_stored")) {
+                     const storedSeq = assetYAML.get("data_assets_stored");
+                     if (isProcessableArray(storedSeq)) {
+                         // Use removeIdFromArray instead of updateIdInArray
+                         removeIdFromArray(storedSeq, idToRemove, `technical_assets[${assetKey}].data_assets_stored`);
+                     } else if (storedSeq) {
+                        console.warn(`    Skipping removal in technical_assets[${assetKey}].data_assets_stored: Not a processable array/sequence.`);
+                     }
+                }
+
+                // 1b. Check nested communication links
+                if (assetYAML.has("communication_links")) {
+                    const nestedCommLinksYAML = assetYAML.get("communication_links"); // Original YAML Map/Object for links
+
+                    if (nestedCommLinksYAML && typeof nestedCommLinksYAML.toJSON === 'function') {
+                        const nestedCommLinksJS = nestedCommLinksYAML.toJSON(); // JS version for keys
+                         console.log(`    Checking Nested Communication Links within [${assetKey}] for removal of "${idToRemove}"...`);
+
+                        Object.keys(nestedCommLinksJS).forEach(linkKey => {
+                             console.log(`      Checking Nested Link: [${linkKey}]`);
+                             const linkYAML = nestedCommLinksYAML.get(linkKey); // <<< Get ORIGINAL YAML Link object
+
+                             if (!linkYAML) {
+                                console.warn(`      Skipping nested link [${linkKey}]: Could not retrieve original YAML object.`);
+                                return; // Continue to next link key
+                             }
+
+                             if (linkYAML.has("data_assets_sent")) {
+                                 const sentSeq = linkYAML.get("data_assets_sent");
+                                 if (isProcessableArray(sentSeq)) {
+                                     // Use removeIdFromArray
+                                     removeIdFromArray(sentSeq, idToRemove, `technical_assets[${assetKey}].communication_links[${linkKey}].data_assets_sent`);
+                                 } else if (sentSeq) {
+                                    console.warn(`      Skipping removal in ...communication_links[${linkKey}].data_assets_sent: Not a processable array/sequence.`);
+                                 }
+                             }
+                             if (linkYAML.has("data_assets_received")) {
+                                 const receivedSeq = linkYAML.get("data_assets_received");
+                                  if (isProcessableArray(receivedSeq)) {
+                                     // Use removeIdFromArray
+                                     removeIdFromArray(receivedSeq, idToRemove, `technical_assets[${assetKey}].communication_links[${linkKey}].data_assets_received`);
+                                  } else if (receivedSeq) {
+                                     console.warn(`      Skipping removal in ...communication_links[${linkKey}].data_assets_received: Not a processable array/sequence.`);
+                                  }
+                             }
+                        });
+                    }
+                }
+            });
+        } else {
+             console.warn(`Could not iterate over 'technical_assets' for removal: Not a recognized YAML collection or is null.`);
+        }
+    } else {
+        console.log("  No 'technical_assets' section found, skipping removal within.");
+    }
+
+    // --- 2. Process TOP-LEVEL Communication Links ---
+    if (model.has("communication_links")) {
+        const topLevelCommLinksYAML = model.get("communication_links"); // YAML Map/Object
+
+        if (topLevelCommLinksYAML && typeof topLevelCommLinksYAML.toJSON === 'function') {
+             const topLevelCommLinksJS = topLevelCommLinksYAML.toJSON(); // JS version for keys
+             console.log(`  Checking Top-Level Communication Links for removal of "${idToRemove}"...`);
+
+             Object.keys(topLevelCommLinksJS).forEach(linkKey => {
+                 console.log(`    Checking Top-Level Link: [${linkKey}]`);
+                 const linkYAML = topLevelCommLinksYAML.get(linkKey); // <<< Get ORIGINAL YAML Link object
+
+                  if (!linkYAML) {
+                    console.warn(`    Skipping top-level link [${linkKey}]: Could not retrieve original YAML object.`);
+                    return; // Continue to next link key
+                  }
+
+                 if (linkYAML.has("data_assets_sent")) {
+                     const sentSeq = linkYAML.get("data_assets_sent");
+                     if (isProcessableArray(sentSeq)) {
+                         // Use removeIdFromArray
+                         removeIdFromArray(sentSeq, idToRemove, `communication_links[${linkKey}].data_assets_sent`);
+                     } else if (sentSeq) {
+                        console.warn(`    Skipping removal in communication_links[${linkKey}].data_assets_sent: Not a processable array/sequence.`);
+                     }
+                 }
+                 if (linkYAML.has("data_assets_received")) {
+                      const receivedSeq = linkYAML.get("data_assets_received");
+                      if (isProcessableArray(receivedSeq)) {
+                         // Use removeIdFromArray
+                         removeIdFromArray(receivedSeq, idToRemove, `communication_links[${linkKey}].data_assets_received`);
+                      } else if (receivedSeq) {
+                         console.warn(`    Skipping removal in communication_links[${linkKey}].data_assets_received: Not a processable array/sequence.`);
+                      }
+                 }
+             });
+        } else {
+             console.warn(`Could not iterate over 'communication_links' for removal: Not a recognized YAML collection or is null.`);
+        }
+    } else {
+        console.log("  No top-level 'communication_links' section found, skipping removal within.");
+    }
+
+    // --- 3. Process Risk Tracking ---
+    if (model.has("risk_tracking")) {
+        console.log(`  Checking 'risk_tracking': Removal logic for risk keys containing "${idToRemove}" is NOT IMPLEMENTED.`);
+        // NOTE: Removing items from risk_tracking might require different logic,
+        // e.g., removing entire key-value pairs if the key contains the ID.
+        // This is more complex than removing an ID from a list of strings.
+        // const riskTrackingYAML = model.get("risk_tracking");
+        // if (riskTrackingYAML && typeof riskTrackingYAML.toJSON === 'function') {
+        //     // Implement logic here if needed, e.g., iterate keys and check if idToRemove is part of the key string.
+        //     // Be careful: Removing items from a map while iterating requires care.
+        // }
+    } else {
+        console.log("  No 'risk_tracking' section found.");
+    }
+
+    console.log(`>>> Reference removal finished for ID: ${idToRemove}`);
+}
   var ui = this.editorUi;
   var editor = ui.editor;
   var graph = editor.graph;
@@ -8146,7 +8411,7 @@ if (
             const uiListItem = xButton.parentNode.parentNode; // The <li> or equivalent UI element
             const uiList = uiListItem.parentNode; // The <ul> or equivalent UI element
             const model = graph.model; // Get the Threagile model object
-            const dataAssetIdToDeleteID = model.threagile.getIn(["data_assets",dataAssetKeyToDelete]).toJSON().id;
+            const dataAssetIdToDeleteID = model.threagile.getIn(["data_assets",dataAssetKeyToDelete],true).toJSON().id;
             if (!model || !model.threagile) { // Ensure model and its data exist
                 console.error("Threagile model data not found!");
                 Swal.fire({
@@ -8159,7 +8424,7 @@ if (
 
             // --- 2. Find Direct Dependencies (Simplified: Data Assets using '<<') ---
             const dependents = [];
-            const dataAssets = model.threagile.getIn(["data_assets"]).toJSON() || {}; // Access data within the model structure
+            const dataAssets = model.threagile.toJSON().data_assets || {}; // Access data within the model structure
 
             for (const assetId in dataAssets) {
                 if (assetId === dataAssetKeyToDelete) continue; // Skip self
@@ -8170,8 +8435,8 @@ if (
                     let referencedId = '';
                     if (typeof asset['<<'] === 'string') {
                         referencedId = asset['<<'];
-                    } else if (typeof asset['<<'] === 'object' && asset['<<'] !== null && asset['<<'].source) {
-                        referencedId = asset['<<'].source;
+                    } else if (typeof asset['<<'] === 'object' && asset['<<'] !== null && asset['<<'].id) {
+                        referencedId = asset['<<'].id;
                     }
 
                     if (referencedId === dataAssetIdToDeleteID) {
@@ -8334,6 +8599,7 @@ if (
                         // --- User chose "Delete Item and Dependents" ---
                         console.log("User chose to DELETE ALL (item and dependents).");
 
+                        removeReferences(graph.model.threagile, dataAssetIdToDeleteID);
                         // Delete dependent items first
                         dependents.forEach(item => {
                             // For dependents, we usually only delete from the model.
@@ -8352,6 +8618,7 @@ if (
                          // --- User chose "Delete Item Only" ---
                          console.log("User chose to DELETE ITEM ONLY.");
 
+                        removeReferences(graph.model.threagile, dataAssetIdToDeleteID);
                          // Delete only the original item (model + diagramData)
                          performSingleDeletion(dataAssetKeyToDelete, 'data_assets', clonedMenu.id);
 
@@ -8370,11 +8637,10 @@ if (
                 // Delete the item (model + diagramData)
                 performSingleDeletion(dataAssetKeyToDelete, 'data_assets', clonedMenu.id);
 
+                removeReferences(graph.model.threagile, dataAssetIdToDeleteID);
                 // Update UI
-                uiList.removeChild(uiListItem);
                 console.log(`Data asset ${dataAssetKeyToDelete} deleted.`);
             }
-
              // Optional: Trigger a model update/refresh event if your application uses one
              // graph.model.fireEvent(new mxEventObject(mxEvent.CHANGE)); // Example for mxGraph
         });
@@ -11629,6 +11895,7 @@ function setCustomOption(self, parameter) {
 
 
 DiagramFormatPanel.prototype.addDataMenu = function (container,UUID = undefined) {
+
 /**
  * Updates occurrences of oldId with newId within a collection (JS Array or YAML Sequence).
  * Uses eemeli/yaml methods (.get, .set) for YAML Sequences, accessing the .value
@@ -11805,6 +12072,7 @@ function updateAnchorsAndAliases(docOrNode, oldAnchorName, newAnchorName) {
      console.log(`>>> Anchor/alias update finished for ${oldAnchorName}.`);
      return result;
 }
+
 /**
  * Updates all known references to a data asset ID throughout the Threagile model.
  * Handles technical assets, top-level communication links, nested communication links,
@@ -12312,15 +12580,16 @@ function renameYamlMapKey(doc, mapPath, oldKey, newKey, YAML) {
                         }
 
                         graphvar.refresh(); 
-                    }else if(p === "id"){
-                      let id = self.graph.model.threagile.getIn(["data_assets", str, p], newValue).toJSON();
-                      self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
+                    }else if(p === "id")
+                    {
+
+                     let id = self.graph.model.threagile.getIn(["data_assets", str, p], newValue).toJSON();
+
+                     self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
                       updateReferences(self.editorUi.editor.graph.model.threagile, id, newValue);
-
                     }
-
                       else {
-                      self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
+                          self.graph.model.threagile.setIn(["data_assets", str, p], newValue);
                     }
                   }
                 },

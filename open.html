@@ -32,29 +32,50 @@
 			})(files[i]);
 		}
 	};
-	function useDefaultGraph(){
-		const url =window.location.protocol +"//"+ window.location.host+"/wasm/Threagile/threagile.yaml";
-		fetch(url)
-		.then(response => {
-			if (!response.ok) {
-				throw new Error("Network response was not ok");
-			}
-			return response.text();
-		})
-		.then(data => {
-			// Create a simulated file from the fetched content
-			const blob = new Blob([data], { type: "text/yaml" });
-			const file = new File([blob], "threagile.yaml", { type: "text/yaml" });
+/**
+ * Fetches the default threagile.yaml model file from a location
+ * relative to the application's deployment root and processes it.
+ * Works correctly whether deployed at the root or in a subdirectory (like GitHub Pages).
+ */
+function useDefaultGraph() {
+    // Define the path RELATIVE to the current page/application root.
+    // The browser will resolve this correctly against the base URL,
+    // e.g., https://username.github.io/ThreagilePlus/wasm/Threagile/threagile.yaml
+    const relativePath = 'wasm/Threagile/threagile.yaml';
 
-			// Pass it into the existing handleFiles function
-			handleFiles([file]);
-		})
-		.catch(error => {
-			console.error("Error loading default YAML:", error);
-			alert("Could not load the default example file.");
-		});
+    console.log(`Attempting to fetch default model from relative path: ${relativePath}`);
 
-	}
+    fetch(relativePath)
+        .then(response => {
+            if (!response.ok) {
+                // Throw an error with more context including the resolved URL
+                throw new Error(`HTTP error! status: ${response.status} while fetching ${response.url}`);
+            }
+            // Log the actual URL fetch used (for debugging)
+            console.log(`Successfully initiated fetch for: ${response.url}`);
+            return response.text();
+        })
+        .then(data => {
+            // Create a simulated file from the fetched content
+            const blob = new Blob([data], { type: 'text/yaml' }); // Use consistent quotes
+            const filename = relativePath.split('/').pop() || 'threagile.yaml'; // Get filename from path
+            const file = new File([blob], filename, { type: 'text/yaml' });
+
+            // Ensure handleFiles function exists before calling
+            if (typeof handleFiles === 'function') {
+                 handleFiles([file]);
+            } else {
+                console.error('Error: handleFiles function is not defined.');
+                alert('Error: Cannot process the default file, handler function is missing.');
+            }
+        })
+        .catch(error => {
+            console.error(`Error loading default YAML from relative path ${relativePath}:`, error);
+            // Give a slightly more informative alert
+            alert(`Could not load the default example file (${relativePath}). Please check the browser console for details. Error: ${error.message}`);
+        });
+}
+
 	// Handles form-submit by preparing to process response
 	function handleSubmit()
 	{
