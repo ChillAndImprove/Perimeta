@@ -3,15 +3,15 @@
 </p>
 
 
-# Threagile Plus
+# Perimeta
 
-Welcome to Threagile Plus! This open-source project aims to enhance your experience with threat modeling.
+Welcome to Perimeta! This open-source project aims to enhance your experience with threat modeling.
 
 ![showcase](finished.gif)
 
 ## Getting Started
 
-To start using Threagile Plus, follow these steps:
+To start using Perimeta, follow these steps:
 
 1. Switch to the cloned repository directory:
     ```bash
@@ -27,7 +27,7 @@ To start using Threagile Plus, follow these steps:
 
 ## Technical Details
 
-Threagile Plus is built upon JGraph (also known as [mxGraph](https://github.com/jgraph/mxgraph)) and [Threagile](https://github.com/Threagile/threagile), which was compiled to WebAssembly (WASM). The combination of these technologies allows for an enhanced and intuitive experience with threat modeling.
+Perimeta is built upon JGraph (also known as [mxGraph](https://github.com/jgraph/mxgraph)) and [Threagile](https://github.com/Threagile/threagile), which was compiled to WebAssembly (WASM). The combination of these technologies allows for an enhanced and intuitive experience with threat modeling.
 
 
 ## TODO
