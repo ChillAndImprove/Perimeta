@@ -1,3 +1,225 @@
+
+class DeleteElementCommand {
+    /**
+     * Command to handle the deletion of a Threagile element and its corresponding mxGraph cell.
+     * Stores necessary data to undo the deletion.
+     *
+     * @param {mxGraph} graph The mxGraph instance.
+     * @param {object} threagileModel The central Threagile data model (potentially Immutable).
+     * @param {mxCell} cell The mxGraph cell object being removed. THIS IS THE CELL OBJECT ITSELF.
+     * @param {object} elementData The deep-copied data of the Threagile element being removed (retrieved *before* deletion).
+     * @param {string} elementType The type of the Threagile element (e.g., 'technicalAsset', 'communicationLink', 'trustBoundary').
+     * @param {object} [context=null] Optional context data needed for undo (e.g., { sourceAssetKey: '...' } for communication links).
+     */
+    constructor(graph, threagileModel, cell, elementData, elementType, context = null) {
+        // --- Input Validation ---
+        if (!graph || !threagileModel || !elementData || !elementType) {
+            throw new Error("DeleteElementCommand Error: Missing required constructor arguments (graph, threagileModel, elementData, elementType).");
+        }
+        if (!cell || typeof cell.getId !== 'function' || typeof cell.isVertex !== 'function' || typeof cell.isEdge !== 'function') {
+            let cellIdentifier = 'invalid or null';
+            try { cellIdentifier = JSON.stringify(cell); } catch (e) { /* ignore stringify errors */ }
+             throw new Error(`DeleteElementCommand Error: The 'cell' argument (${cellIdentifier}) does not appear to be a valid mxCell object.`);
+        }
+
+        // --- Store Core Information ---
+        this.graph = graph;
+        this.threagileModel = threagileModel;
+        this.elementData = elementData;
+        this.elementType = elementType;
+        this.context = context;
+
+        // --- Store the Cell Reference Directly ---
+        this.cellInstance = cell; // Store the object reference
+
+        // --- Extract Graph-Specific Information Needed for UNDO ---
+        // We still need to extract this info because the 'cellInstance'
+        // will be gone from the model after 'execute' runs.
+        this.cellId = this.cellInstance.getId(); // Still useful for logging and potentially for undo lookups
+        this.cellGeometry = this.cellInstance.getGeometry() ? this.cellInstance.getGeometry().clone() : null;
+        this.cellStyle = this.cellInstance.getStyle();
+        this.cellValue = this.cellInstance.getValue();
+        this.isVertex = this.cellInstance.isVertex();
+        this.isEdge = this.cellInstance.isEdge();
+        this.graphParentId = this.cellInstance.getParent() ? this.cellInstance.getParent().id : null;
+
+        this.sourceTerminalId = null;
+        this.targetTerminalId = null;
+        if (this.isEdge) {
+            const sourceTerminal = this.cellInstance.getTerminal(true);
+            const targetTerminal = this.cellInstance.getTerminal(false);
+            this.sourceTerminalId = sourceTerminal ? sourceTerminal.id : null;
+            this.targetTerminalId = targetTerminal ? targetTerminal.id : null;
+        }
+
+        console.log(`[DELETE_CMD] Command created for ${this.elementType} (Cell ID: ${this.cellId}, Threagile ID: ${this.elementData?.id || 'N/A'}) - Storing direct cell reference.`);
+    }
+
+/**
+     * Executes the deletion action, primarily focusing on the Threagile model.
+     * Assumes the mxGraph cell removal has already been handled externally
+     * before this command's execute method is invoked in this specific workflow.
+     * This method effectively becomes the 'redo' action after an 'undo'.
+     */
+    execute() {
+        console.log(`[DELETE_CMD] Executing/Redoing delete for ${this.elementType} ID: ${this.elementData?.id || this.cellId}`);
+
+        let threagileModelChanged = false;
+
+        // 1. Remove the element from your Threagile model
+        //    This is the primary responsibility of execute() in this flow.
+        try {
+            // TODO: Implement your actual Threagile model removal logic here.
+            // Example placeholder: Needs your specific API call.
+            // const result = YourThreagileAPI.removeElement(
+            //     this.threagileModel,
+            //     this.elementType,
+            //     this.elementData.id, // Use the Threagile ID
+            //     this.context
+            // );
+            // Update the model reference if your API returns a new immutable model:
+            // if (result.modelChanged) {
+            //     this.threagileModel = result.newModel;
+            //     threagileModelChanged = true;
+            //     console.log("[DELETE_CMD] Threagile model updated.");
+            // } else {
+            //     console.log("[DELETE_CMD] Threagile element likely already removed or not found in model.");
+            // }
+             console.log("[DELETE_CMD] Threagile model removal executed (placeholder - implement actual logic).");
+             threagileModelChanged = true; // Assume it changed for placeholder
+
+
+        } catch (e) {
+            console.error(`[DELETE_CMD] Error removing element from Threagile model for ${this.elementType} ID ${this.elementData?.id}:`, e);
+        }
+
+
+        // 2. NO mxGraph cell removal here!
+        //    It's assumed to be already done by the operation that triggered
+        //    the creation of this command. The warning you saw confirms this.
+        console.log(`[DELETE_CMD] Graph cell removal for ${this.cellId} is skipped in execute() (assumed pre-handled).`);
+
+
+        // 3. TODO: Notify other parts of your application if necessary,
+        //    especially if the Threagile model changed.
+        //    if (threagileModelChanged) { /* ... */ }
+    }    /**
+     * Undoes the deletion.
+     * Re-inserts the element into the Threagile model and the cell into the mxGraph model.
+     * NOTE: This method *cannot* reuse the stored 'cellInstance' because that object
+     *       was removed. It *must* recreate the cell using stored properties.
+     */
+    undo() {
+        console.log(`[DELETE_CMD] Undoing delete for ${this.elementType} ID: ${this.elementData?.id || this.cellId}`);
+
+         // 1. TODO: Re-insert the element into your Threagile model
+         //    (Same as before)
+         //    this.threagileModel = YourThreagileAPI.addElement(...)
+         //    console.log("[DELETE_CMD] Threagile model restored (placeholder).");
+
+
+        // 2. Re-insert the cell into the mxGraph model
+        //    --- This logic remains the same - we MUST recreate the cell ---
+        this.graph.getModel().beginUpdate();
+        try {
+            const parent = this.graph.getModel().getCell(this.graphParentId) || this.graph.getDefaultParent();
+            let restoredCell = null; // This will be a NEW cell object
+
+            if (this.isVertex && this.cellGeometry) {
+                restoredCell = this.graph.insertVertex(
+                    parent, this.cellId, this.cellValue,
+                    this.cellGeometry.x, this.cellGeometry.y, this.cellGeometry.width, this.cellGeometry.height,
+                    this.cellStyle, this.cellGeometry.relative
+                );
+                // TODO: Re-apply custom Threagile data to 'restoredCell'
+                console.log(`[DELETE_CMD] Re-inserted vertex ${this.cellId}.`);
+            } else if (this.isEdge && this.sourceTerminalId && this.targetTerminalId) {
+                const source = this.graph.getModel().getCell(this.sourceTerminalId);
+                const target = this.graph.getModel().getCell(this.targetTerminalId);
+                if (source && target) {
+                    restoredCell = this.graph.insertEdge(
+                        parent, this.cellId, this.cellValue,
+                        source, target, this.cellStyle
+                    );
+                    if (this.cellGeometry) restoredCell.setGeometry(this.cellGeometry.clone());
+                     // TODO: Re-apply custom Threagile data to 'restoredCell'
+                    console.log(`[DELETE_CMD] Re-inserted edge ${this.cellId} between ${this.sourceTerminalId} and ${this.targetTerminalId}.`);
+                } else {
+                    console.warn(`[DELETE_CMD] Undo: Failed find source/target for edge ${this.cellId}. Edge not restored.`);
+                }
+            } else {
+                 console.warn(`[DELETE_CMD] Undo: Cannot restore cell ${this.cellId}. Invalid type or missing info.`);
+            }
+        } catch (e) {
+            console.error(`[DELETE_CMD] Error during undo for cell ${this.cellId}:`, e);
+        } finally {
+            this.graph.getModel().endUpdate();
+        }
+
+        // 3. TODO: Notify other parts of your application if necessary
+    }
+}
+class UndoRedoManager {
+    constructor() {
+        this.undoStack = [];
+        this.redoStack = [];
+    }
+
+    executeCommand(command) {
+        command.execute(); // Apply the change
+        this.undoStack.push(command);
+        // Clear the redo stack whenever a new command is executed
+        this.redoStack = [];
+        // Optionally: Update UI state (enable/disable undo/redo buttons)
+        this.updateUIState();
+    }
+
+    undo() {
+        if (this.undoStack.length === 0) return; // Nothing to undo
+
+        const command = this.undoStack.pop();
+        command.undo(); // Reverse the change
+        this.redoStack.push(command);
+        // Optionally: Update UI state
+        this.updateUIState();
+    }
+
+    redo() {
+        if (this.redoStack.length === 0) return; // Nothing to redo
+
+        const command = this.redoStack.pop();
+        command.execute(); // Re-apply the change
+        this.undoStack.push(command);
+        // Optionally: Update UI state
+        this.updateUIState();
+    }
+
+    canUndo() {
+        return this.undoStack.length > 0;
+    }
+
+    canRedo() {
+        return this.redoStack.length > 0;
+    }
+
+    updateUIState() {
+        // Logic to enable/disable undo/redo buttons in your UI
+        console.log(`Undo possible: ${this.canUndo()}, Redo possible: ${this.canRedo()}`);
+        // Example: document.getElementById('undoButton').disabled = !this.canUndo();
+        // Example: document.getElementById('redoButton').disabled = !this.canRedo();
+    }
+
+     clearHistory() {
+        this.undoStack = [];
+        this.redoStack = [];
+        this.updateUIState();
+    }
+}
+
+// Instantiate your manager
+
+
+
 /**
  * Copyright (c) 2006-2012, JGraph Ltd
  */
@@ -5,6 +227,8 @@
  * Editor constructor executed on page load.
  */
 Editor = function (chromeless, themes, model, graph, editable) {
+ const undoManager = new UndoRedoManager();
+
   mxEventSource.call(this);
   this.chromeless = chromeless != null ? chromeless : this.chromeless;
   this.initStencilRegistry();
@@ -154,6 +378,42 @@ Editor = function (chromeless, themes, model, graph, editable) {
   // Sets persistent graph state defaults
   this.graph.resetViewOnRootChange = false;
   this.init();
+
+
+
+    let self = this;
+    this.graph.addListener(mxEvent.REMOVE_CELLS, function(sender, evt) {
+        const cells = evt.getProperty('cells');
+
+        let graph = self.graph;
+        graph.getModel().beginUpdate(); 
+        try {
+            cells.forEach(cell => {
+                if (cell.isBeingProcessedByCommand) return;
+
+                const elementInfo = self.findThreagileElementForCell(cell); 
+
+                if (elementInfo) {
+                    // Create and execute the command
+                    const command = new DeleteElementCommand(
+                        graph,
+                        self.graph.model.threagile,
+                        cell,
+                        elementInfo.data, // The actual data object
+                        elementInfo.type // 'technicalAsset', 'dataFlow', etc.
+                    );
+                    undoManager.executeCommand(command);
+                } else {
+                    console.warn(`No Threagile data found for deleted cell ${cell.id}`);
+                }
+            });
+        } finally {
+            graph.getModel().endUpdate();
+        }
+        });
+
+
+
 };
 
 /**
@@ -521,7 +781,7 @@ Editor.prototype.editAsNew = function (xml, title) {
  */
 Editor.prototype.createGraph = function (themes, model) {
   var graph = new Graph(null, model, null, null, themes);
-  graph.transparentBackground = true;//false;
+  graph.transparentBackground = false;
 
   // Opens all links in a new window while editing
   if (!this.chromeless) {
@@ -537,13 +797,13 @@ Editor.prototype.createGraph = function (themes, model) {
  * Sets the XML node for the current diagram.
  */
 Editor.prototype.resetGraph = function () {
-  this.graph.gridEnabled = false;//!this.isChromelessView() || urlParams["grid"] == "1";
+  this.graph.gridEnabled = !this.isChromelessView() || urlParams["grid"] == "1";
   this.graph.graphHandler.guidesEnabled = true;
   this.graph.setTooltips(true);
   this.graph.setConnectable(true);
   this.graph.foldingEnabled = true;
   this.graph.scrollbars = this.graph.defaultScrollbars;
-  this.graph.pageVisible = false;//this.graph.defaultPageVisible;
+  this.graph.pageVisible = this.graph.defaultPageVisible;
   this.graph.pageBreaksVisible = this.graph.pageVisible;
   this.graph.preferPageSize = this.graph.pageBreaksVisible;
   this.graph.background = null;
@@ -791,6 +1051,13 @@ Editor.prototype.createUndoManager = function () {
       }
 
       graph.setSelectionCells(cells);
+    }
+    if (eventName === mxEvent.UNDO) {
+        console.log("Processing UNDO event...");
+
+    } else if (eventName === mxEvent.REDO) {
+        console.log("Processing REDO event...");
+        // --- Add specific logic for REDO here
     }
   };
 
@@ -2984,3 +3251,179 @@ FilenameDialog.createFileTypes = function (editorUi, nameInput, types) {
     return cell;
   };
 })();
+
+/**
+ * Finds the Threagile data associated with a given mxGraph cell.
+ * Retrieves the data *before* potential deletion for use in undo commands.
+ * Handles Technical Assets, Communication Links, and Trust Boundaries.
+ * Assumes the Threagile model at `this.graph.model.threagile` uses an
+ * Immutable.js-like API, requiring `getIn` for access.
+ *
+ * @param {mxCell} cell The mxGraph cell object.
+ * @returns {object|null} An object { id: string, type: string, data: object, context?: object } or null if not found/applicable.
+ *          - id: The primary key of the Threagile element (asset key, link key, trust boundary key).
+ *          - type: String identifying the type ('technicalAsset', 'communicationLink', 'trustBoundary').
+ *          - data: A deep copy of the Threagile element's plain JavaScript object data.
+ *          - context: Optional data (e.g., sourceAssetKey for communicationLink undo).
+ */
+Editor.prototype.findThreagileElementForCell = function(cell) {
+    const logPrefix = "[FIND_THREAGILE_MULTI]";
+
+    // --- 1. Prerequisite Checks ---
+    if (!cell) {
+        console.warn(`${logPrefix} Input cell is null or undefined.`);
+        return null;
+    }
+    const cellId = cell.getId(); // For logging
+
+    if (!this.graph || !this.graph.getModel()) {
+        console.warn(`${logPrefix} Prerequisite missing: graph or graphModel for cell ${cellId}.`);
+        return null;
+    }
+
+    const model = this.graph.getModel();
+    const threagileModel = model.threagile; // Get the threagile model reference
+
+    if (!threagileModel) {
+        console.warn(`${logPrefix} Prerequisite missing: graph.model.threagile is not available for cell ${cellId}.`);
+        return null;
+    }
+
+    if (typeof threagileModel.getIn !== 'function') {
+         console.error(`${logPrefix} Prerequisite missing: graph.model.threagile does not have a 'getIn' method for cell ${cellId}. Cannot retrieve data.`);
+         return null;
+    }
+
+    let elementInfo = null;
+    let threagileRawData = undefined;
+    let dataPath = null; // Keep track of the path used for logging
+
+    /**
+     * Helper function to deep copy data, handling potential Immutable.js objects.
+     * @param {*} rawData The data retrieved via getIn.
+     * @returns {object|null} A deep-copied plain JavaScript object, or null if input is invalid.
+     */
+    const deepCopyThreagileData = (rawData) => {
+        if (rawData === null || typeof rawData === 'undefined') {
+            return null;
+        }
+        try {
+            const dataToCopy = typeof rawData.toJSON === 'function'
+                ? rawData.toJSON() // Convert Immutable structure to plain JS
+                : rawData;       // Assume already plain JS/primitive
+
+            // Final check before stringify/parse
+            if (dataToCopy !== null && typeof dataToCopy !== 'undefined') {
+                return JSON.parse(JSON.stringify(dataToCopy));
+            }
+        } catch (e) {
+            console.error(`${logPrefix} Error during deep copy:`, e, "Raw data:", rawData);
+        }
+        return null; // Return null if copying fails or data is invalid
+    };
+
+
+    try {
+        // --- 2. Determine Cell Type and Extract Keys/Path ---
+
+        // CASE 1: Edge (Communication Link)
+        if (model.isEdge(cell)) {
+            console.log(`${logPrefix} Cell ${cellId} is an Edge. Checking for Communication Link.`);
+            const sourceCell = model.getTerminal(cell, true);
+            const sourceAssetKey = sourceCell?.value?.technicalAsset?.key;
+            // Prioritize key from cell.value if available
+            const commLinkKey = cell.value?.communicationAsset?.key ?? cell.communicationAssetKey;
+
+            if (sourceAssetKey && commLinkKey) {
+                console.log(`${logPrefix} Comm Link keys found: sourceAssetKey=${sourceAssetKey}, commLinkKey=${commLinkKey}`);
+                dataPath = ["technical_assets", sourceAssetKey, "communication_links", commLinkKey];
+
+                threagileRawData = threagileModel.getIn(dataPath);
+
+                const deepCopiedData = deepCopyThreagileData(threagileRawData);
+                if (deepCopiedData) {
+                    elementInfo = {
+                        id: commLinkKey,
+                        type: 'communicationLink',
+                        data: deepCopiedData,
+                        context: { sourceAssetKey: sourceAssetKey }
+                    };
+                    console.log(`${logPrefix} Found Communication Link data for ${commLinkKey}.`);
+                }
+            } else {
+                console.warn(`${logPrefix} Edge ${cellId} missing sourceAssetKey (${sourceAssetKey}) or commLinkKey (${commLinkKey}). Check cell/source cell value properties.`);
+            }
+        }
+        // CASE 2 & 3: Vertex (Could be Technical Asset OR Trust Boundary)
+        else if (model.isVertex(cell)) {
+            console.log(`${logPrefix} Cell ${cellId} is a Vertex. Checking for Trust Boundary or Technical Asset.`);
+
+            // CASE 2a: Check for Trust Boundary first
+            // Adjust the key access based on your actual implementation
+            // Possibilities: cell.trustBoundaryKey, cell.value?.trustBoundaryKey, cell.value?.trustBoundary?.key
+            const trustBoundaryKey = cell.trust_boundarieskey;
+
+            if (trustBoundaryKey) {
+                 console.log(`${logPrefix} Vertex key found: trustBoundaryKey=${trustBoundaryKey}`);
+                 dataPath = ["trust_boundaries", trustBoundaryKey];
+                 threagileRawData = threagileModel.getIn(dataPath);
+                 const deepCopiedData = deepCopyThreagileData(threagileRawData);
+
+                 if (deepCopiedData) {
+                      elementInfo = {
+                          id: trustBoundaryKey,
+                          type: 'trustBoundary',
+                          data: deepCopiedData
+                          // No extra context usually needed
+                      };
+                      console.log(`${logPrefix} Found Trust Boundary data for ${trustBoundaryKey}.`);
+                 }
+            } else {
+                 // CASE 2b: Check for Technical Asset if not a Trust Boundary
+                 const assetKey = cell.technicalAsset?.key;
+                 if (assetKey) {
+                      console.log(`${logPrefix} Vertex key found: assetKey=${assetKey}`);
+                      dataPath = ["technical_assets", assetKey];
+                      threagileRawData = threagileModel.getIn(dataPath);
+                      const deepCopiedData = deepCopyThreagileData(threagileRawData);
+
+                      if (deepCopiedData) {
+                           elementInfo = {
+                               id: assetKey,
+                               type: 'technicalAsset',
+                               data: deepCopiedData
+                               // No extra context usually needed
+                           };
+                           console.log(`${logPrefix} Found Technical Asset data for ${assetKey}.`);
+                      }
+                 } else {
+                      console.warn(`${logPrefix} Vertex ${cellId} is not identified as a linked Trust Boundary or Technical Asset. Missing relevant key in cell value.`);
+                 }
+            }
+        }
+        // CASE 4: Other cell types (Groups, etc.) - Currently ignored for Threagile data
+        else {
+            console.log(`${logPrefix} Cell ${cellId} is not an Edge or Vertex. Type: ${cell.constructor.name}. Ignoring for Threagile data.`);
+        }
+
+        // --- 3. Log if data retrieval failed where expected ---
+        if (dataPath && !elementInfo) {
+             console.log(`${logPrefix} Data retrieval failed or data was invalid/empty for path: ${dataPath.join('.')}`);
+        }
+
+    } catch (error) {
+        // Catch errors during key extraction or getIn calls
+        const pathInfo = dataPath ? ` at path ${dataPath.join('.')}` : '';
+        console.error(`${logPrefix} Error processing cell ${cellId}${pathInfo}:`, error);
+        return null; // Return null on error
+    }
+
+    // --- 4. Return Result ---
+    if (elementInfo) {
+       console.log(`${logPrefix} Success: Returning elementInfo for cell ${cellId}`, elementInfo);
+    } else {
+       // Failure log messages are now more specific within the try block
+       console.log(`${logPrefix} Finished processing cell ${cellId}. No associated Threagile element data found.`);
+    }
+    return elementInfo;
+};
