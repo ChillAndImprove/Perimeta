@@ -224,7 +224,6 @@ class TestTrustBoundary():
             print(f"Expecting data_asset_id: {data_asset_id}")
 
             # Step 4: Fetch model data
-            #set_trace()
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
             new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
             new_len = len(new_nested) if hasattr(new_nested, '__len__') else None

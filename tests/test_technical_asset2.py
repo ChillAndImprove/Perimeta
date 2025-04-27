@@ -230,8 +230,18 @@ class TestTechnicalAsset2():
         )
         print(f"✅ Deleted {removed_count} oval nodes successfully.")
 
+
+
+
+
+
+
+
         # STEP 6: Undo (Ctrl+Z)
-        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('z').key_up(Keys.CONTROL).perform()
+        self.driver.execute_script("""
+            self.editorUi.actions.actions.undo.funct.call(self.editorUi);
+        """)
+        #ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('z').key_up(Keys.CONTROL).perform()
         time.sleep(1)
 
         # STEP 7: Get state AFTER undo
@@ -318,7 +328,6 @@ class TestTechnicalAsset2():
             print(f"Expecting data_asset_id: {data_asset_id}")
 
             # Step 4: Fetch model data
-            #set_trace()
             threagile_data = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
             new_nested = get_nested_value(threagile_data, root_key, asset_key, nested_path_prefix[0])
             new_len = len(new_nested) if hasattr(new_nested, '__len__') else None

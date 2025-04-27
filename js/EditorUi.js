@@ -6,153 +6,6 @@
  */
 
       
-/**
- * Custom undoable edit for managing threagile data alongside cell removals.
- * @param {EditorUi} editorUi The EditorUi instance.
- * @param {Array<{cell: mxCell, path: Array, data: any}>} removedData An array of objects, each containing the cell removed,
- *        the path in the threagile model where its data was, and a *copy* of the data itself.
- */
-function ThreagileDataRemoveEdit(editorUi, removedData) {
-  this.editorUi = editorUi;
-  this.removedData = removedData; // [{ cellId: '...', isEdge: true, path: [...], data: {...} }, ...]
-  this.changeSource = editorUi.editor.graph; // Important for identifying the source of the change
-
-  // Ensure data is properly copied (assuming Immutable.js or plain objects)
-  this.removedData.forEach(item => {
-    if (item.data && typeof item.data.toJSON === 'function') {
-        // Handle Immutable.js Maps/Lists etc.
-        item.data = JSON.parse(JSON.stringify(item.data.toJSON()));
-    } else if (item.data) {
-        // Handle plain JS objects/arrays
-        item.data = JSON.parse(JSON.stringify(item.data));
-    }
-    // Store cell ID for potential re-association if needed, though path/data is primary
-    item.cellId = item.cell.getId();
-    item.isEdge = this.editorUi.editor.graph.getModel().isEdge(item.cell);
-    item.isVertex = this.editorUi.editor.graph.getModel().isVertex(item.cell);
-     // We might need source/target info for edges if restoring requires linking logic later
-    if (item.isEdge) {
-        item.sourceId = item.cell.source ? item.cell.source.getId() : null;
-        item.targetId = item.cell.target ? item.cell.target.getId() : null;
-    }
-  });
-}
-
-/**
- * Executes the edit - removes data from the threagile model.
- */
-ThreagileDataRemoveEdit.prototype.execute = function() {
-  var model = this.editorUi.editor.graph.model;
-  // On execute/redo, we delete the data from the live model
-  this.removedData.forEach(item => {
-    try {
-        console.log('ThreagileDataRemoveEdit execute: Deleting at path:', item.path);
-        // Check if the path still exists before attempting deletion (might have been removed by another operation)
-        if (model.threagile.hasIn(item.path)) {
-           model.threagile = model.threagile.deleteIn(item.path);
-           console.log('ThreagileDataRemoveEdit execute: Successfully deleted.');
-        } else {
-           console.log('ThreagileDataRemoveEdit execute: Path already gone:', item.path);
-        }
-        // Clear potentially stale references on the cell object (which might be restored visually)
-        if (item.isEdge) {
-             item.cell.communicationAssetKey = undefined;
-             item.cell.communicationAsset = undefined;
-        } else if (item.isVertex) {
-             item.cell.technicalAsset = undefined;
-             // cell.technicalAssetKey is usually just technicalAsset.key
-        }
-    } catch (e) {
-      console.error('Error deleting threagile data during redo/execute:', e, 'Path:', item.path);
-      // Optionally re-throw or handle error
-    }
-  });
-   // Trigger a generic update if needed, though model changes should handle it
-   // this.editorUi.editor.graph.refresh();
-};
-
-/**
- * Undoes the edit - restores data to the threagile model.
- */
-ThreagileDataRemoveEdit.prototype.undo = function() {
-  var model = this.editorUi.editor.graph.model;
-  // On undo, we restore the data
-  this.removedData.forEach(item => {
-    try {
-      console.log('ThreagileDataRemoveEdit undo: Restoring at path:', item.path, 'Data:', item.data);
-      // Use setIn to restore the data. This assumes item.data is in the correct plain JS format.
-      // If using Immutable.js, you might need Immutable.fromJS(item.data)
-      let dataToRestore = item.data;
-      // If your model expects Immutable objects, convert back:
-      // try { // Be defensive against non-JSON or complex structures if necessary
-      //    dataToRestore = Immutable.fromJS(item.data);
-      // } catch(e) {
-      //    console.error("Failed to convert stored data back to Immutable for path", item.path, e);
-      //    dataToRestore = item.data; // Fallback or handle error
-      // }
-
-      // Restore the data in the threagile model
-      model.threagile = model.threagile.setIn(item.path, dataToRestore);
-
-      // --- Re-associate restored data with the visually restored cell ---
-      // The cell object `item.cell` should be the one restored by mxGraph's undo.
-      // We need to find it again if the reference isn't stable, using item.cellId.
-      var graph = this.editorUi.editor.graph;
-      var restoredCell = graph.model.getCell(item.cellId); // Get the current cell object
-
-      if (restoredCell) {
-          if (item.isEdge) {
-              // Re-attach the data/key. The data itself is now live in model.threagile again.
-              restoredCell.communicationAssetKey = item.path[item.path.length -1]; // The key is the last part of the path
-              // Find the restored data object in the live model to re-link
-              restoredCell.communicationAsset = model.threagile.getIn(item.path);
-              console.log('ThreagileDataRemoveEdit undo: Re-associated edge', restoredCell.id, 'with key', restoredCell.communicationAssetKey);
-          } else if (item.isVertex) {
-              // Re-attach the data/key.
-              // Find the restored data object in the live model to re-link
-              restoredCell.technicalAsset = model.threagile.getIn(item.path);
-              // The key should be part of the restored data, verify if needed:
-              // restoredCell.technicalAsset.key should match item.path[item.path.length - 1]
-               console.log('ThreagileDataRemoveEdit undo: Re-associated vertex', restoredCell.id, 'with asset', restoredCell.technicalAsset);
-          }
-      } else {
-           console.warn('ThreagileDataRemoveEdit undo: Could not find restored cell with ID', item.cellId, 'to re-associate data.');
-      }
-
-      console.log('ThreagileDataRemoveEdit undo: Successfully restored.');
-    } catch (e) {
-      console.error('Error restoring threagile data during undo:', e, 'Path:', item.path);
-      // Optionally re-throw or handle error
-    }
-  });
-
-  // Trigger a generic update if needed
-  // this.editorUi.editor.graph.refresh();
-};
-
-// Register the codec for the custom edit if you need serialization (often not needed for runtime undo)
-// This part is complex and might not be necessary unless you save/load the undo history itself.
-/*
-(function() {
-    var codec = new mxObjectCodec(new ThreagileDataRemoveEdit(null, []), ['editorUi']); // Exclude editorUi from encoding
-
-    codec.afterDecode = function(dec, node, obj) {
-        // Restore editorUi reference after decoding if needed, e.g., via a global lookup
-        // obj.editorUi = GlobalEditorUiLookup.getInstance();
-        // Decode removedData structure manually if it's complex
-        // This is highly dependent on how removedData is structured and stored in XML
-        return obj;
-    };
-
-    codec.beforeEncode = function(enc, obj, node) {
-        // Customize encoding if needed, e.g., convert removedData to a serializable format
-        return node;
-    };
-
-    mxCodecRegistry.register(codec);
-})();
-*/
-
 
 EditorUi = function (editor, container, lightbox) {
   mxEventSource.call(this);
@@ -1031,81 +884,103 @@ EditorUi = function (editor, container, lightbox) {
       originalRemoveCells.apply(this, [cells, includeEdges]);
   };
   */
+      
+      /*
     graph.addListener(mxEvent.REMOVE_CELLS, function(sender, evt) {
-      const cells = evt.getProperty('cells'); 
+      const cells = evt.getProperty('cells');
+      const currentModel = graph.getModel(); // Get model within the listener if needed
+
+      // Check if model.threagile exists before proceeding
+      if (!currentModel.threagile || typeof currentModel.threagile.getIn !== 'function') {
+          console.warn('REMOVE_CELLS Listener: model.threagile not available or invalid.');
+          return;
+      }
+
       cells.forEach(cell => {
-          if (graph.getModel().isEdge(cell)) {
-              console.log('An edge was deleted:', cell);
-              if(self.editorUi.editor.graph.model.threagile.getIn(["technical_assets", cell.source.technicalAsset.key ])){
-                let asset=self.editorUi.editor.graph.model.threagile.getIn(["technical_assets", cell.source.technicalAsset.key ]);
-                if(typeof asset.toJSON === 'function') {
-                  asset= asset.toJSON();
+          try { // Add try...catch for safety within listener
+              if (currentModel.isEdge(cell)) {
+                  console.log('[LISTENER] An edge was deleted:', cell.id);
+                  // Use self.editor
+                  if (cell.source && cell.source.technicalAsset && cell.communicationAssetKey && self.editor.graph.model.threagile.getIn(["technical_assets", cell.source.technicalAsset.key ])) {
+                    // Use self.editor
+                    let asset=self.editor.graph.model.threagile.getIn(["technical_assets", cell.source.technicalAsset.key ]);
+                    // You probably don't need the .toJSON() check here if just checking existence for deleteIn
+                    // if(typeof asset.toJSON === 'function') {
+                    //  asset = asset.toJSON(); // Be careful - this might be unnecessary complexity
+                    // }
+
+                    // Check if communication_links exists before trying to delete from it
+                    if (asset && asset.communication_links) { // Check asset exists first
+                       console.log(`[LISTENER] Deleting edge data: technical_assets.${cell.source.technicalAsset.key}.communication_links.${cell.communicationAssetKey}`);
+                       // Use self.editor - AND REMEMBER: This deleteIn is NOT UNDOABLE correctly
+                       const deleteStatus = self.editor.graph.model.threagile.deleteIn(["technical_assets", cell.source.technicalAsset.key , "communication_links", cell.communicationAssetKey]);
+                       console.log(`[LISTENER] -> deleteIn status: ${deleteStatus}`);
+                       // cell.communicationAssetKey = undefined; // Modifying cell here is risky post-removal
+                       // cell.communicationAsset = undefined;
+                    } else {
+                         console.log(`[LISTENER] Edge ${cell.id}: Source asset or communication_links missing.`);
+                    }
+                  } else {
+                      console.log(`[LISTENER] Edge ${cell.id}: Prereqs for deleteIn not met (source, key, or path missing?).`);
                   }
-              if (asset.communication_links){
-               self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.source.technicalAsset.key , "communication_links", cell.communicationAssetKey])
-                cell.communicationAssetKey = undefined;
-                cell.communicationAsset = undefined;
+              } else if (currentModel.isVertex(cell)) {
+                  console.log('[LISTENER] A node was deleted:', cell.id);
+                  if(cell.technicalAsset && cell.technicalAsset.key){
+                     console.log(`[LISTENER] Deleting vertex data: technical_assets.${cell.technicalAsset.key}`);
+                     // Use self.editor - AND REMEMBER: This deleteIn is NOT UNDOABLE correctly
+                     const deleteStatus = self.editor.graph.model.threagile.deleteIn(["technical_assets", cell.technicalAsset.key]);
+                     console.log(`[LISTENER] -> deleteIn status: ${deleteStatus}`);
+                  } else {
+                     console.log("[LISTENER] Vertex removed without technicalAsset key.");
+                  }
               }
+          } catch (e) {
+              console.error(`[LISTENER] Error processing removed cell ${cell.id}:`, e);
           }
-            } else if (graph.getModel().isVertex(cell)) {
-              console.log('An node was deleted:', cell);
-              if(cell.technicalAsset){
-              self.editorUi.editor.graph.model.threagile.deleteIn(["technical_assets", cell.technicalAsset.key]);
-            }
-            else{
-              console.log("Removed without source");
-            }
-            }
       });
     });
-    graph.addListener(mxEvent.CELLS_ADDED, function (sender, evt) {
-      // TODO: In EditorUI CELLS_ADDED: First if first check what kind of element, if Trust Boundary..., technical ASset..
-      // ..Create threagile.yaml
-      var cells = evt.getProperty("cells");
-      var parent = evt.getProperty("parent");
-      if (graph.getModel().isVertex(cells[0])) {
-        cells[0].bkcells= cells[0].edges;
-      
-      }
+    */
 
-      if (
-        graph.getModel().isLayer(parent) &&
-        !graph.isCellVisible(parent) &&
-        cells != null &&
-        cells.length > 0
-      ) {
-        graph.getModel().setVisible(parent, true);
-      }
-
-      
-      if (cells != null && cells.length > 0) {
-        var cell = cells[0]; // Assuming you want to check only the first or the only newly added cell
-        var cellStyle = graph.getModel().getStyle(cell);
-
-        // Determine the shape from the style and execute corresponding logic
-        if (cellStyle) {
-          if (cellStyle.includes('ellipse')) {
-              console.log('An ellipse was added.');
-              console.log(graph.getGraphBounds());
-              // Additional logic for Ellipse
-          } else if (cellStyle.includes('hexagon')) {
-              console.log('A hexagon was added.');
-              // Additional logic for Hexagon
-          } else if (cellStyle.includes('cylinder')) {
-              console.log('A cylinder was added.');
-              // Additional logic for Cylinder
-          }  else if (cellStyle.includes('rounded=0') && cellStyle.includes('fillColor=none')) {
-            console.log('A rectangle was added.');
-            // Handle other shapes or provide a default action
-          }
-          else{
-            console.log('A different shape or style was added: ' + cellStyle);
-
-          }
-        }
-    }
     
-    });
+   graph.addListener(mxEvent.CELLS_ADDED, function (sender, evt) {
+    var cells = evt.getProperty("cells");
+    var parent = evt.getProperty("parent");
+
+    if (cells != null && cells.length > 0) {
+        cells.forEach(cell => {
+             if (graph.getModel().isVertex(cell)) {
+                // Logic to potentially CREATE initial threagile data based on style/type
+                // This part is about *creation*, not undo/redo of removal.
+                var cellStyle = graph.getModel().getStyle(cell);
+                let type = 'unknown'; // Determine type from style
+                if (cellStyle && cellStyle.includes('shape=cloud')) type = 'cloud';
+                else if (cellStyle && cellStyle.includes('ellipse')) type = 'process'; // Example mapping
+                else if (cellStyle && cellStyle.includes('cylinder')) type = 'datastore'; // Example mapping
+                else if (cellStyle && cellStyle.includes('rhombus')) type = 'gateway'; // Example mapping
+                // ... other shape mappings
+
+                console.log(`CELL ADDED: ${cell.id}, Type: ${type}, Style: ${cellStyle}`);
+
+                // TODO: Add logic here to:
+                // 1. Generate a unique key/ID for the new Threagile asset.
+                // 2. Create a default Threagile technical_asset object based on the type.
+                // 3. Add it to graph.model.threagile using setIn.
+                // 4. Associate the live object and key with the cell (e.g., cell.technicalAsset = liveData).
+                // 5. IMPORTANT: This creation step ALSO needs its own UNDOABLE EDIT (e.g., ThreagileDataAddEdit)
+                //    that removes the data on undo and adds it back on redo. This is the inverse of ThreagileDataRemoveEdit.
+             } else if (graph.getModel().isEdge(cell)) {
+                 console.log(`EDGE ADDED: ${cell.id}`);
+                 // TODO: Similar logic for creating communication_links when edges are added.
+                 // This also needs its own undoable edit (ThreagileLinkAddEdit?).
+             }
+        });
+    }
+
+    // Layer visibility logic (keep this)
+    if (graph.getModel().isLayer(parent) && !graph.isCellVisible(parent) && cells != null && cells.length > 0) {
+        graph.getModel().setVisible(parent, true);
+    }
+  });
 
     // Global handler to hide the current menu
     this.gestureHandler = mxUtils.bind(this, function (evt) {
@@ -1203,7 +1078,11 @@ EditorUi = function (editor, container, lightbox) {
   if (!graph.standalone) {
     this.open();
   }
+
+
+  this.addUndoListener();
 };
+
 
 // Extends mxEventSource
 mxUtils.extend(EditorUi, mxEventSource);
@@ -1337,7 +1216,6 @@ EditorUi.prototype.init = function () {
     );
 
     // Updates action states
-    this.addUndoListener();
     this.addBeforeUnloadListener();
 
     graph.getSelectionModel().addListener(
@@ -3134,6 +3012,7 @@ EditorUi.prototype.createTemporaryGraph = function (stylesheet) {
   graph.autoScroll = false;
   graph.setTooltips(false);
   graph.setEnabled(false);
+  graph.setSplitEnabled(false);
 
   // Container must be in the DOM for correct HTML rendering
   graph.container.style.visibility = "hidden";
@@ -3789,41 +3668,43 @@ EditorUi.prototype.setGridColor = function (value) {
   this.fireEvent(new mxEventObject("gridColorChanged"));
 };
 
-/**
- * Updates the states of the given undo/redo items.
- */
-EditorUi.prototype.addUndoListener = function () {
-  var undo = this.actions.get("undo");
-  var redo = this.actions.get("redo");
+EditorUi.prototype.addUndoListener = function()
+{
+	var undo = this.actions.get('undo');
+	var redo = this.actions.get('redo');
+	
+	var undoMgr = this.editor.undoManager;
+	
+    var undoListener = mxUtils.bind(this, function()
+    {
+    	undo.setEnabled(this.canUndo());
+    	redo.setEnabled(this.canRedo());
+    });
 
-  var undoMgr = this.editor.undoManager;
-  var undoListener = mxUtils.bind(this, function () {
-    undo.setEnabled(this.canUndo());
-    redo.setEnabled(this.canRedo());
-  });
-
-  undoMgr.addListener(mxEvent.ADD, undoListener);
-  undoMgr.addListener(mxEvent.UNDO, undoListener);
-  undoMgr.addListener(mxEvent.REDO, undoListener);
-  undoMgr.addListener(mxEvent.CLEAR, undoListener);
-
-  // Overrides cell editor to update action states
-  var cellEditorStartEditing = this.editor.graph.cellEditor.startEditing;
-
-  this.editor.graph.cellEditor.startEditing = function () {
-    cellEditorStartEditing.apply(this, arguments);
+    undoMgr.addListener(mxEvent.ADD, undoListener);
+    undoMgr.addListener(mxEvent.UNDO, undoListener);
+    undoMgr.addListener(mxEvent.REDO, undoListener);
+    undoMgr.addListener(mxEvent.CLEAR, undoListener);
+	
+	// Overrides cell editor to update action states
+	var cellEditorStartEditing = this.editor.graph.cellEditor.startEditing;
+	
+	this.editor.graph.cellEditor.startEditing = function()
+	{
+		cellEditorStartEditing.apply(this, arguments);
+		undoListener();
+	};
+	
+	var cellEditorStopEditing = this.editor.graph.cellEditor.stopEditing;
+	
+	this.editor.graph.cellEditor.stopEditing = function(cell, trigger)
+	{
+		cellEditorStopEditing.apply(this, arguments);
+		undoListener();
+	};
+	
+	// Updates the button states once
     undoListener();
-  };
-
-  var cellEditorStopEditing = this.editor.graph.cellEditor.stopEditing;
-
-  this.editor.graph.cellEditor.stopEditing = function (cell, trigger) {
-    cellEditorStopEditing.apply(this, arguments);
-    undoListener();
-  };
-
-  // Updates the button states once
-  undoListener();
 };
 
 /**

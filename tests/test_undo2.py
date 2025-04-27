@@ -18,6 +18,123 @@ from selenium.common.exceptions import TimeoutException
 from deepdiff import DeepDiff
 
 temp_profile = tempfile.mkdtemp()
+def format_deepdiff_output(diff_result, indent_level=2):
+    """
+    Formats a DeepDiff result object into a more human-readable string.
+
+    Args:
+        diff_result: The DeepDiff object (or its dictionary representation).
+        indent_level: The number of spaces for basic indentation.
+
+    Returns:
+        A formatted string representing the differences.
+    """
+    if not diff_result:
+        return "No differences found."
+
+    # Ensure we're working with the dictionary representation
+    if hasattr(diff_result, 'to_dict'):
+        diff_dict = diff_result.to_dict()
+    elif isinstance(diff_result, dict):
+        diff_dict = diff_result
+    else:
+        return f"Cannot format unexpected diff type: {type(diff_result)}"
+
+    output_lines = []
+    base_indent = " " * indent_level
+
+    def format_value(value, indent):
+        """Helper to pretty-print values using json.dumps for nested structures."""
+        try:
+            # Use json.dumps for nice indentation of dicts/lists
+            return json.dumps(value, indent=indent, sort_keys=True)
+        except TypeError:
+            # Fallback for non-serializable objects
+            return repr(value)
+
+    def indent_string(text, spaces):
+        """Indents each line of a multi-line string."""
+        prefix = " " * spaces
+        # Ensure consistent line endings before splitting
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        return "".join(prefix + line for line in text.splitlines(True)) # Keep line endings
+
+    output_lines.append("Differences Found:")
+    output_lines.append("=" * 20)
+
+    # --- Values Changed ---
+    if 'values_changed' in diff_dict:
+        output_lines.append("\n--- Values Changed ---")
+        for path, changes in diff_dict['values_changed'].items():
+            output_lines.append(f"\n{base_indent}Location: {path}")
+            old_val_str = format_value(changes['old_value'], indent=indent_level)
+            new_val_str = format_value(changes['new_value'], indent=indent_level)
+            # Indent the multi-line formatted values further
+            output_lines.append(f"{base_indent}  Old Value:")
+            output_lines.append(indent_string(old_val_str, indent_level * 2))
+            output_lines.append(f"{base_indent}  New Value:")
+            output_lines.append(indent_string(new_val_str, indent_level * 2))
+            output_lines.append(base_indent + "-" * 15) # Separator
+
+    # --- Items Added (Lists/Sets) ---
+    if 'iterable_item_added' in diff_dict:
+        output_lines.append("\n--- Items Added (to Lists/Sets) ---")
+        for path, item in diff_dict['iterable_item_added'].items():
+            output_lines.append(f"\n{base_indent}Location: {path}")
+            item_str = format_value(item, indent=indent_level)
+            output_lines.append(f"{base_indent}  Added Item:")
+            output_lines.append(indent_string(item_str, indent_level * 2))
+            output_lines.append(base_indent + "-" * 15)
+
+    # --- Items Removed (Lists/Sets) ---
+    if 'iterable_item_removed' in diff_dict:
+        output_lines.append("\n--- Items Removed (from Lists/Sets) ---")
+        for path, item in diff_dict['iterable_item_removed'].items():
+            output_lines.append(f"\n{base_indent}Location: {path}")
+            item_str = format_value(item, indent=indent_level)
+            output_lines.append(f"{base_indent}  Removed Item:")
+            output_lines.append(indent_string(item_str, indent_level * 2))
+            output_lines.append(base_indent + "-" * 15)
+
+    # --- Dictionary Items Added ---
+    if 'dictionary_item_added' in diff_dict:
+        output_lines.append("\n--- Dictionary Items Added ---")
+        for path in diff_dict['dictionary_item_added']:
+             # DeepDiff path includes the key, extract value if possible (might need context)
+             # For simplicity, just list the path (key) that was added
+             output_lines.append(f"\n{base_indent}Added Key Path: {path}")
+             # To show the value, you'd need to look it up in the 'new' dictionary, which DeepDiff doesn't store here directly
+             # output_lines.append(f"{base_indent}  (Value would need lookup in final model)")
+             output_lines.append(base_indent + "-" * 15)
+
+    # --- Dictionary Items Removed ---
+    if 'dictionary_item_removed' in diff_dict:
+        output_lines.append("\n--- Dictionary Items Removed ---")
+        for path in diff_dict['dictionary_item_removed']:
+             # Similar to added, just list the path (key) that was removed
+             output_lines.append(f"\n{base_indent}Removed Key Path: {path}")
+             # output_lines.append(f"{base_indent}  (Value would need lookup in initial model)")
+             output_lines.append(base_indent + "-" * 15)
+
+    # --- Type Changes ---
+    if 'type_changes' in diff_dict:
+        output_lines.append("\n--- Type Changes ---")
+        for path, changes in diff_dict['type_changes'].items():
+            output_lines.append(f"\n{base_indent}Location: {path}")
+            # Get type names nicely
+            old_type_name = getattr(changes.get('old_type'), '__name__', str(changes.get('old_type')))
+            new_type_name = getattr(changes.get('new_type'), '__name__', str(changes.get('new_type')))
+            output_lines.append(f"{base_indent}  Old Type : {old_type_name}")
+            output_lines.append(f"{base_indent}  New Type : {new_type_name}")
+            # Optionally show values if helpful, keeping them brief
+            output_lines.append(f"{base_indent}  Old Value: {repr(changes.get('old_value'))}")
+            output_lines.append(f"{base_indent}  New Value: {repr(changes.get('new_value'))}")
+            output_lines.append(base_indent + "-" * 15)
+
+    # Add more handlers for other DeepDiff keys (set_item_added, attribute_added etc.) if needed
+
+    output_lines.append("\n" + "=" * 20)
+    return "\n".join(output_lines)
 
 # --- Fixture Setup (No changes needed here, looks good) ---
 @pytest.fixture(scope="function")
@@ -288,13 +405,8 @@ class TestTechnicalAsset():
     """
 
     UNDO_SCRIPT = """
-    try {
-        var editorUi = window.editorUi; if (!editorUi) throw new Error("Could not find editorUi object.");
-        var undoManager = editorUi.editor.undoManager; if (!undoManager) throw new Error("Could not find undoManager object.");
-        if (undoManager.indexOfNextAdd === 0) { return { status: "Warning", message: "Nothing in the undo history." }; }
-        undoManager.undo();
+        self.editorUi.actions.actions.undo.funct.call(self.editorUi);
         return { status: "Success", message: "Undo operation performed." };
-    } catch (err) { return { status: "JS_ERROR", message: err.toString(), stack: err.stack || "No stack trace available" }; }
     """
     SELECT_CIRCLES_SCRIPT = """
     // NOTE: This script finds *all* vertices styled as ellipses/circles.
@@ -340,7 +452,6 @@ class TestTechnicalAsset():
         the removal and restoration of corresponding entries in the 'technical_assets'
         section of the Threagile model.
         """
-        #set_trace()
 
         # Step 1: Get Initial Threagile State (focus on technical_assets)
         print("\n[TA Test - Step 1] Getting initial Threagile model state...")
@@ -463,7 +574,8 @@ class TestTechnicalAsset():
 
         if diff_after_undo:
             print("ERROR: Threagile model differs from initial state after undo!")
-            print(diff_after_undo)
+            formatted_diff_output = format_deepdiff_output(diff_after_undo) # <--- The new way
+            print(formatted_diff_output) # Print the nicely formatted string
             # Save files for debugging
             try:
                 with open("initial_model_ta_failed.json", "w") as f: json.dump(initial_threagile_model, f, indent=2)
@@ -647,7 +759,6 @@ class TestTechnicalAsset():
         Tests deleting rectangle shapes (assumed Trust Boundaries) and verifies
         the impact and restoration on the 'trust_boundaries' section of the Threagile model.
         """
-        #set_trace()
 
         # Step 1: Get Initial Threagile State (focus on trust_boundaries)
         print("\n[TB Test - Step 1] Getting initial Threagile model state...")

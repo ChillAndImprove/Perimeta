@@ -9641,7 +9641,12 @@ function interpolateColorForRisks(minColor, maxColor, minVal, maxVal, val) {
           const technicalAsset = graph.model.threagile.getIn(['technical_assets', technicalAssetId]);
           if(graph.model.threagile.getIn(['technical_assets', technicalAssetId, "id"]) === undefined)
           {
-            id = graph.model.threagile.getIn(['technical_assets', technicalAssetId]).toJSON().id;
+              let threat = self.editorUi.editor.graph.model.threagile.getIn(['technical_assets', technicalAssetId]);
+              if (typeof threat.toJSON === 'function') {
+                threat= threat.toJSON();
+              }
+ 
+            id = threat.id;
           }
           else {
             id = technicalAsset ? technicalAsset.title : undefined; 
@@ -10974,9 +10979,10 @@ BoundaryFormatPanel.prototype.addBoundaryMenuDynamic = function (
                     cell.trust_boundarieskey=newValue;
 
                     let newassetPath        = ["trust_boundaries", cell.trust_boundarieskey];
-                    self.editorUi.editor.graph.model.threagile.setIn(newassetPath, object);
-                    let restoreIntegrity    = self.editorUi.editor.graph.model.threagile.toString();
-                    self.editorUi.editor.graph.model.threagile =  YAML.parseDocument(restoreIntegrity); 
+                    let objectNode = self.editorUi.editor.graph.model.threagile.createNode(object); 
+                    self.editorUi.editor.graph.model.threagile.setIn(newassetPath, objectNode);
+                    //let restoreIntegrity    = self.editorUi.editor.graph.model.threagile.toString();
+                    //self.editorUi.editor.graph.model.threagile =  YAML.parseDocument(restoreIntegrity); 
                   }
                   else{
                     self.editorUi.editor.graph.model.threagile.setIn(["trust_boundaries", cell.trust_boundarieskey,property],newValue);  

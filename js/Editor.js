@@ -1,162 +1,199 @@
-
+/*
+ *
+ *We need to restome something in the cell too, the thing that is saved in the cell 
+ We need a test that checks if after restoration, there is no error !
+ * */
 class DeleteElementCommand {
     /**
-     * Command to handle the deletion of a Threagile element and its corresponding mxGraph cell.
-     * Stores necessary data to undo the deletion.
-     *
-     * @param {mxGraph} graph The mxGraph instance.
-     * @param {object} threagileModel The central Threagile data model (potentially Immutable).
-     * @param {mxCell} cell The mxGraph cell object being removed. THIS IS THE CELL OBJECT ITSELF.
-     * @param {object} elementData The deep-copied data of the Threagile element being removed (retrieved *before* deletion).
-     * @param {string} elementType The type of the Threagile element (e.g., 'technicalAsset', 'communicationLink', 'trustBoundary').
-     * @param {object} [context=null] Optional context data needed for undo (e.g., { sourceAssetKey: '...' } for communication links).
+     * @param {object} threagile - The Threagile model object (expecting .getIn, .setIn, .deleteIn methods)
+     * @param {object} asset - The original asset object being deleted.
+     * @param {(string|number)[]} path - The path array to the asset within the model.
+     * @param {string} assetType - Type like "TrustBoundary", "TechnicalAsset", "CommunicationLink".
      */
-    constructor(graph, threagileModel, cell, elementData, elementType, context = null) {
-        // --- Input Validation ---
-        if (!graph || !threagileModel || !elementData || !elementType) {
-            throw new Error("DeleteElementCommand Error: Missing required constructor arguments (graph, threagileModel, elementData, elementType).");
-        }
-        if (!cell || typeof cell.getId !== 'function' || typeof cell.isVertex !== 'function' || typeof cell.isEdge !== 'function') {
-            let cellIdentifier = 'invalid or null';
-            try { cellIdentifier = JSON.stringify(cell); } catch (e) { /* ignore stringify errors */ }
-             throw new Error(`DeleteElementCommand Error: The 'cell' argument (${cellIdentifier}) does not appear to be a valid mxCell object.`);
-        }
-
-        // --- Store Core Information ---
+    constructor(mxObjectId,cellid, threagile, asset, path, assetType, assetInformation,graph,  batchId = null) {
+        this.mxObjectId = mxObjectId;
+        this.cellid = cellid;
+        this.threagile = threagile;
         this.graph = graph;
-        this.threagileModel = threagileModel;
-        this.elementData = elementData;
-        this.elementType = elementType;
-        this.context = context;
-
-        // --- Store the Cell Reference Directly ---
-        this.cellInstance = cell; // Store the object reference
-
-        // --- Extract Graph-Specific Information Needed for UNDO ---
-        // We still need to extract this info because the 'cellInstance'
-        // will be gone from the model after 'execute' runs.
-        this.cellId = this.cellInstance.getId(); // Still useful for logging and potentially for undo lookups
-        this.cellGeometry = this.cellInstance.getGeometry() ? this.cellInstance.getGeometry().clone() : null;
-        this.cellStyle = this.cellInstance.getStyle();
-        this.cellValue = this.cellInstance.getValue();
-        this.isVertex = this.cellInstance.isVertex();
-        this.isEdge = this.cellInstance.isEdge();
-        this.graphParentId = this.cellInstance.getParent() ? this.cellInstance.getParent().id : null;
-
-        this.sourceTerminalId = null;
-        this.targetTerminalId = null;
-        if (this.isEdge) {
-            const sourceTerminal = this.cellInstance.getTerminal(true);
-            const targetTerminal = this.cellInstance.getTerminal(false);
-            this.sourceTerminalId = sourceTerminal ? sourceTerminal.id : null;
-            this.targetTerminalId = targetTerminal ? targetTerminal.id : null;
+        // Deep copy the asset to preserve its state at the time of deletion for undo
+        // Ensure asset is not null/undefined before stringify/parse
+        this.asset = asset ? JSON.parse(JSON.stringify(asset)) : null;
+        this.path = path; // Assuming path is already an array like ['technical_assets', 'asset-id']
+        this.assetType = assetType;
+        this.references = []; // Stores paths where this asset's ID was referenced (for TechnicalAsset)
+        this.assetId = null; // Store the ID specifically for TechnicalAsset restoration
+        this.batchId = batchId;
+        this.assetInformation = assetInformation;
+        // Pre-calculate asset ID if it's a technical asset being deleted
+        if (this.assetType === "TechnicalAsset" && this.asset && this.asset.id) {
+             this.assetId = this.asset.id;
+        } else if (this.assetType === "TechnicalAsset") {
+            console.warn("Cannot determine ID for Technical Asset being deleted. Reference restoration during undo might fail.", this.path, this.asset);
         }
 
-        console.log(`[DELETE_CMD] Command created for ${this.elementType} (Cell ID: ${this.cellId}, Threagile ID: ${this.elementData?.id || 'N/A'}) - Storing direct cell reference.`);
+        console.log(`Command created: Delete ${this.assetType} at path:`, this.path);
+        // console.log("Asset data snapshot:", JSON.stringify(this.asset, null, 2)); // Debugging
     }
 
-/**
-     * Executes the deletion action, primarily focusing on the Threagile model.
-     * Assumes the mxGraph cell removal has already been handled externally
-     * before this command's execute method is invoked in this specific workflow.
-     * This method effectively becomes the 'redo' action after an 'undo'.
-     */
     execute() {
-        console.log(`[DELETE_CMD] Executing/Redoing delete for ${this.elementType} ID: ${this.elementData?.id || this.cellId}`);
+        console.log(`Executing delete for ${this.assetType} at path:`, this.path);
 
-        let threagileModelChanged = false;
-
-        // 1. Remove the element from your Threagile model
-        //    This is the primary responsibility of execute() in this flow.
-        try {
-            // TODO: Implement your actual Threagile model removal logic here.
-            // Example placeholder: Needs your specific API call.
-            // const result = YourThreagileAPI.removeElement(
-            //     this.threagileModel,
-            //     this.elementType,
-            //     this.elementData.id, // Use the Threagile ID
-            //     this.context
-            // );
-            // Update the model reference if your API returns a new immutable model:
-            // if (result.modelChanged) {
-            //     this.threagileModel = result.newModel;
-            //     threagileModelChanged = true;
-            //     console.log("[DELETE_CMD] Threagile model updated.");
-            // } else {
-            //     console.log("[DELETE_CMD] Threagile element likely already removed or not found in model.");
-            // }
-             console.log("[DELETE_CMD] Threagile model removal executed (placeholder - implement actual logic).");
-             threagileModelChanged = true; // Assume it changed for placeholder
-
-
-        } catch (e) {
-            console.error(`[DELETE_CMD] Error removing element from Threagile model for ${this.elementType} ID ${this.elementData?.id}:`, e);
+        if (!this.threagile || typeof this.threagile.deleteIn !== 'function') {
+            console.error("Threagile object or deleteIn method is missing!");
+            return; // Cannot proceed
+        }
+        if (!this.path || this.path.length === 0) {
+            console.error("Invalid path provided for deletion.");
+            return;
         }
 
-
-        // 2. NO mxGraph cell removal here!
-        //    It's assumed to be already done by the operation that triggered
-        //    the creation of this command. The warning you saw confirms this.
-        console.log(`[DELETE_CMD] Graph cell removal for ${this.cellId} is skipped in execute() (assumed pre-handled).`);
-
-
-        // 3. TODO: Notify other parts of your application if necessary,
-        //    especially if the Threagile model changed.
-        //    if (threagileModelChanged) { /* ... */ }
-    }    /**
-     * Undoes the deletion.
-     * Re-inserts the element into the Threagile model and the cell into the mxGraph model.
-     * NOTE: This method *cannot* reuse the stored 'cellInstance' because that object
-     *       was removed. It *must* recreate the cell using stored properties.
-     */
-    undo() {
-        console.log(`[DELETE_CMD] Undoing delete for ${this.elementType} ID: ${this.elementData?.id || this.cellId}`);
-
-         // 1. TODO: Re-insert the element into your Threagile model
-         //    (Same as before)
-         //    this.threagileModel = YourThreagileAPI.addElement(...)
-         //    console.log("[DELETE_CMD] Threagile model restored (placeholder).");
-
-
-        // 2. Re-insert the cell into the mxGraph model
-        //    --- This logic remains the same - we MUST recreate the cell ---
-        this.graph.getModel().beginUpdate();
         try {
-            const parent = this.graph.getModel().getCell(this.graphParentId) || this.graph.getDefaultParent();
-            let restoredCell = null; // This will be a NEW cell object
-
-            if (this.isVertex && this.cellGeometry) {
-                restoredCell = this.graph.insertVertex(
-                    parent, this.cellId, this.cellValue,
-                    this.cellGeometry.x, this.cellGeometry.y, this.cellGeometry.width, this.cellGeometry.height,
-                    this.cellStyle, this.cellGeometry.relative
-                );
-                // TODO: Re-apply custom Threagile data to 'restoredCell'
-                console.log(`[DELETE_CMD] Re-inserted vertex ${this.cellId}.`);
-            } else if (this.isEdge && this.sourceTerminalId && this.targetTerminalId) {
-                const source = this.graph.getModel().getCell(this.sourceTerminalId);
-                const target = this.graph.getModel().getCell(this.targetTerminalId);
-                if (source && target) {
-                    restoredCell = this.graph.insertEdge(
-                        parent, this.cellId, this.cellValue,
-                        source, target, this.cellStyle
-                    );
-                    if (this.cellGeometry) restoredCell.setGeometry(this.cellGeometry.clone());
-                     // TODO: Re-apply custom Threagile data to 'restoredCell'
-                    console.log(`[DELETE_CMD] Re-inserted edge ${this.cellId} between ${this.sourceTerminalId} and ${this.targetTerminalId}.`);
-                } else {
-                    console.warn(`[DELETE_CMD] Undo: Failed find source/target for edge ${this.cellId}. Edge not restored.`);
-                }
-            } else {
-                 console.warn(`[DELETE_CMD] Undo: Cannot restore cell ${this.cellId}. Invalid type or missing info.`);
+            // For Technical Assets, find where they are referenced BEFORE deleting
+            if (this.assetType === "TechnicalAsset" && this.assetId) {
+                console.log(`Finding references for Technical Asset ID: ${this.assetId}`);
+                // We use this.assetId which was captured in the constructor
+                this.references = findIdInTrustBoundaryAssets(this.threagile, this.assetId);
+                console.log(`Found ${this.references.length} references to restore on undo:`, this.references);
+            } else if (this.assetType === "TechnicalAsset" && !this.assetId) {
+                 console.warn("Skipping reference finding because asset ID was not available.");
             }
-        } catch (e) {
-            console.error(`[DELETE_CMD] Error during undo for cell ${this.cellId}:`, e);
-        } finally {
-            this.graph.getModel().endUpdate();
+
+            // Perform the deletion
+            if(this.asset){
+                this.threagile.deleteIn(this.path);
+            }
+            console.log(`Successfully deleted element at path:`, this.path);
+
+        } catch (error) {
+            console.error(`Error during command execution (deleteIn) for path [${this.path.join(', ')}]:`, error);
+            // Depending on requirements, you might want to re-throw or handle differently
+        }
+    }
+
+    undo() {
+        console.log(`Undoing delete for ${this.assetType} at path:`, this.path);
+
+        if (!this.threagile || typeof this.threagile.setIn !== 'function') {
+            console.error("Threagile object or setIn method is missing! Cannot undo.");
+            return; // Cannot proceed
+        }
+         if (!this.path || this.path.length === 0) {
+            console.error("Invalid path provided for undo.");
+            return;
+        }
+        if (this.asset) {
+       
+
+
+        try {
+            // Step 1: Restore the main asset itself
+            console.log("Restoring main asset object:", JSON.stringify(this.asset)); // Debugging
+            const assetNode = this.threagile.createNode(this.asset);
+            this.threagile.setIn(this.path, assetNode);
+            console.log(`Restored main ${this.assetType} object at path:`, this.path);
+
+            // Step 2: If it was a Technical Asset, restore its references in trust boundaries
+            if (this.assetType === "TechnicalAsset") {
+                if (!this.assetId) {
+                    console.warn("Cannot restore references: Original Technical Asset ID was not stored.");
+                } else if (this.references && this.references.length > 0) {
+                    console.log(`Restoring ${this.references.length} references for ID: ${this.assetId}`);
+                    const assetIdToAdd = assetNode.toJSON().id; // Get the ID once
+
+                    this.references.forEach(refPathString => {
+                        let parsedRefPath; // Define for scope
+                        try {
+                            parsedRefPath = parsePathString(refPathString);
+
+                             // Ensure path is valid and has enough parts (parent + element index/key)
+                            if (parsedRefPath && parsedRefPath.length > 1) {
+
+                                // --- Correctly identify the target array path ---
+                                const pathToArray = parsedRefPath.slice(0, -1); // Path to the array itself
+
+                                console.log(`  Attempting to add/ensure ID ${assetIdToAdd} in collection at path: ${JSON.stringify(pathToArray)} (derived from: ${refPathString})`);
+
+                                try {
+                                    // --- Try to get the existing array node ---
+                                    // Use 'true' to get the node itself for manipulation/checking type
+                                    const arrayNode = this.threagile.getIn(pathToArray, true);
+
+                                    if (YAML.isSeq(arrayNode)) {
+                                        // --- Case 1: Array exists and is a sequence ---
+                                        console.log(`    Collection exists. Checking if ID ${assetIdToAdd} is present.`);
+                                        // Check if ID already exists to prevent duplicates (optional but recommended)
+                                        const alreadyExists = arrayNode.items.some(item => {
+                                           const itemValue = (item && item.constructor?.name === 'Scalar') ? item.value : item; // Handle Scalar nodes
+                                           return itemValue === assetIdToAdd;
+                                        });
+
+                                        if (!alreadyExists) {
+                                            console.log(`    Adding ID ${assetIdToAdd}.`);
+                                            arrayNode.add(assetIdToAdd); // Use node's add method
+                                            console.log(`    -> Successfully added ID.`);
+                                        } else {
+                                             console.log(`    ID ${assetIdToAdd} is already present. No action needed.`);
+                                             console.log(`    -> Reference effectively restored (already present).`);
+                                        }
+                                    } else {
+                                        // --- Case 2: Path exists but it's NOT a sequence ---
+                                        // (e.g., null, scalar, map). Overwrite it with a new array.
+                                        console.warn(`    Path ${JSON.stringify(pathToArray)} exists but is not a sequence. Overwriting with new array containing ID ${assetIdToAdd}.`);
+                                        this.threagile.setIn(pathToArray, [assetIdToAdd]); // Use setIn to replace/create
+                                        console.log(`    -> Successfully restored reference by creating/overwriting array.`);
+                                    }
+                                } catch (getError) {
+                                     // Check if error is because path doesn't exist (common reason for getIn failure)
+                                     // Note: Error types/messages might vary, this is a guess
+                                     const pathNotFound = getError.message.includes('Cannot'); // Basic check, adjust if needed
+
+                                    if (pathNotFound) {
+                                      // --- Case 3: getIn failed - Path likely doesn't exist ---
+                                      // Assume we need to create the array structure.
+                                      console.log(`    Collection or parent path does not exist. Creating array at ${JSON.stringify(pathToArray)} with ID ${assetIdToAdd}.`);
+                                      // Use setIn to create the array (and any missing parent maps)
+                                      this.threagile.setIn(pathToArray, [assetIdToAdd]);
+                                      console.log(`    -> Successfully restored reference by creating array.`);
+                                    } else {
+                                       // Different error during getIn, re-throw or handle differently
+                                       console.error(`    Unexpected error getting node at ${JSON.stringify(pathToArray)}:`, getError);
+                                       throw getError; // Re-throw if unexpected
+                                    }
+                                }
+
+                            } else {
+                                console.warn(`  Could not parse reference path string effectively: "${refPathString}"`);
+                            }
+                        } catch (outerError) { // Catch errors from parsePathString or re-thrown errors
+                            console.error(`  Error processing reference restoration for path "${refPathString}":`, outerError);
+                            // Decide if you want to stop or continue with other references
+                        }
+                    }); // End forEach reference
+
+                    console.log("Finished restoring references.");
+                } else {
+                    console.log("No references needed restoration for this Technical Asset.");
+                }
+            }
+
+             console.log(`Successfully undone deletion for ${this.assetType} at path:`, this.path);
+
+        } catch (error) {
+            console.error(`Error during command undo (setIn) for path [${this.path.join(', ')}]:`, error);
+            // Consider cleanup or state reset if undo fails partially
+        }
+         }
+        // Writing to the cell
+        let cell = this.graph.model.getCell(this.cellid);
+        if (this.assetType === "TechnicalAsset"){
+            cell.technicalAsset =this.assetInformation;  
+        }else if(this.assetType === "CommunicationAsset"){
+            cell.communicationAssetKey = this.assetInformation;
+            cell.commnunicationAsset = this.threagile.getIn(this.path);
+        }else if(this.assetType === "trust_boundaries") {
+            cell.trust_boundarieskey = this.assetInformation;
         }
 
-        // 3. TODO: Notify other parts of your application if necessary
     }
 }
 class UndoRedoManager {
@@ -174,24 +211,90 @@ class UndoRedoManager {
         this.updateUIState();
     }
 
+    // *** UNDO METHOD WITH BATCH LOOP ***
     undo() {
-        if (this.undoStack.length === 0) return; // Nothing to undo
+        if (this.undoStack.length === 0) {
+            Logger.log("Undo stack empty.");
+            return;
+        }
 
-        const command = this.undoStack.pop();
-        command.undo(); // Reverse the change
-        this.redoStack.push(command);
-        // Optionally: Update UI state
-        this.updateUIState();
+        // Look at the command on top WITHOUT removing it yet
+        const topCommand = this.undoStack[this.undoStack.length - 1];
+        const targetBatchId = topCommand.batchId; // Get the batch ID (can be null)
+
+        const commandsToUndo = [];
+
+        // Check if the top command has a batchId AND if there are potentially more commands
+        if (targetBatchId && this.undoStack.length > 0) {
+             // *** THE LOOP FOR BATCH UNDO ***
+             // Keep popping commands as long as the stack is not empty AND
+             // the batchId matches the targetBatchId we identified.
+             while (this.undoStack.length > 0 && this.undoStack[this.undoStack.length - 1].batchId === targetBatchId) {
+                 commandsToUndo.push(this.undoStack.pop()); // Pop and add to temp list
+             }
+        } else {
+            // Handle single command (either no batchId or only one command left)
+            Logger.log("Performing single undo (no batch ID or last in batch).");
+            commandsToUndo.push(this.undoStack.pop()); // Pop the single command
+        }
+
+        // Now, execute undo() on the popped commands
+        // Undo in reverse order of execution (which is the order they were popped)
+        commandsToUndo.forEach(cmd => {
+            try {
+                cmd.undo();
+            } catch (e) {
+                Logger.error(`Error during undo execution (Batch: ${cmd.batchId}):`, e);
+                // Decide how to handle partial failures - maybe stop? maybe continue?
+            }
+        });
+
+        // Push the undone commands onto the redo stack
+        // Push them in reverse order so the first one executed is on top of redo stack
+        this.redoStack.push(...commandsToUndo.reverse());
+        Logger.log(`Undo complete. Redo stack size: ${this.redoStack.length}`);
     }
 
+    // *** REDO METHOD WITH BATCH LOOP ***
     redo() {
-        if (this.redoStack.length === 0) return; // Nothing to redo
+        if (this.redoStack.length === 0) {
+            return;
+        }
 
-        const command = this.redoStack.pop();
-        command.execute(); // Re-apply the change
-        this.undoStack.push(command);
-        // Optionally: Update UI state
-        this.updateUIState();
+        // Look at the command on top of REDO stack WITHOUT removing it yet
+        const topCommand = this.redoStack[this.redoStack.length - 1];
+        const targetBatchId = topCommand.batchId; // Get the batch ID (can be null)
+
+        const commandsToRedo = [];
+
+        // Check if the top command has a batchId AND if there are potentially more commands
+        if (targetBatchId && this.redoStack.length > 0) {
+             // *** THE LOOP FOR BATCH REDO ***
+             // Keep popping commands from REDO stack as long as the stack is not empty AND
+             // the batchId matches the targetBatchId.
+             while (this.redoStack.length > 0 && this.redoStack[this.redoStack.length - 1].batchId === targetBatchId) {
+                 commandsToRedo.push(this.redoStack.pop()); // Pop and add to temp list
+             }
+        } else {
+            // Handle single command
+            commandsToRedo.push(this.redoStack.pop()); // Pop the single command
+        }
+
+        // Now, execute redo() on the popped commands
+        // Redo in the order they were originally executed (reverse of how they were popped from redo)
+        commandsToRedo.reverse().forEach(cmd => {
+            try {
+                cmd.redo(); // Or cmd.execute() if redo is just execute
+            } catch (e) {
+                Logger.error(`Error during redo execution (Batch: ${cmd.batchId}):`, e);
+                // Decide how to handle partial failures
+            }
+        });
+
+        // Push the redone commands back onto the undo stack
+        // Push them in the order they were redone (which is original execution order)
+        this.undoStack.push(...commandsToRedo);
+        Logger.log(`Redo complete. Undo stack size: ${this.undoStack.length}`);
     }
 
     canUndo() {
@@ -227,14 +330,14 @@ class UndoRedoManager {
  * Editor constructor executed on page load.
  */
 Editor = function (chromeless, themes, model, graph, editable) {
- const undoManager = new UndoRedoManager();
+  undoManagerThreat = new UndoRedoManager();
 
   mxEventSource.call(this);
   this.chromeless = chromeless != null ? chromeless : this.chromeless;
   this.initStencilRegistry();
   this.graph = graph || this.createGraph(themes, model);
   this.editable = editable != null ? editable : !chromeless;
-  this.undoManager = this.createUndoManager();
+  this.undoManager = this.createUndoManager(undoManagerThreat);
   this.status = "";
   this.getOrCreateFilename = function () {
     return (
@@ -383,33 +486,53 @@ Editor = function (chromeless, themes, model, graph, editable) {
 
     let self = this;
     this.graph.addListener(mxEvent.REMOVE_CELLS, function(sender, evt) {
-        const cells = evt.getProperty('cells');
 
         let graph = self.graph;
-        graph.getModel().beginUpdate(); 
-        try {
-            cells.forEach(cell => {
-                if (cell.isBeingProcessedByCommand) return;
+           const currentBatchId = `batch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+            evt.properties.cells.forEach(cell => {
+		    let cellType;
+		    let asset;
+		    let path; 
+            let assetInformation;
+			if (cell.trust_boundarieskey){
+				cellType="TrustBoundary";
+				path = ["trust_boundaries"]
+                assetInformation=cell.trust_boundarieskey;
+                path.push( cell.trust_boundarieskey);
+				asset = self.graph.getModel().threagile.getIn(path,true); 
+			}else if(cell.technicalAsset && cell.technicalAsset.key){
+				cellType = "TechnicalAsset";
+				path = ["technical_assets"]
+                path.push(cell.technicalAsset.key);
+                assetInformation=JSON.parse(JSON.stringify(cell.technicalAsset));
+				asset = self.graph.getModel().threagile.getIn(path,true); 
+			}else if(cell.communicationAsset){
+				// Here is some logic missing which copies the cellKey and cellid I think
+				cellType = "CommunicationAsset";
+			    path = ['technical_assets', cell.source.technicalAsset.key, 'communication_links',cell.communicationAssetKey];
+				asset = self.graph.getModel().threagile.getIn(path,true); 
+                assetInformation=cell.communicationAssetKey;
+			}else{
+				console.log("Not a regular threat asset");
+			}
 
-                const elementInfo = self.findThreagileElementForCell(cell); 
-
-                if (elementInfo) {
-                    // Create and execute the command
-                    const command = new DeleteElementCommand(
-                        graph,
-                        self.graph.model.threagile,
-                        cell,
-                        elementInfo.data, // The actual data object
-                        elementInfo.type // 'technicalAsset', 'dataFlow', etc.
-                    );
-                    undoManager.executeCommand(command);
+                if (cellType) {
+                const command = new DeleteElementCommand(
+                    cell.mxObjectId,
+                    cell.id, 
+                    self.graph.getModel().threagile,
+                    asset, 
+                    path,
+                    cellType,
+                    assetInformation,
+                    self.graph,
+                    currentBatchId
+                );
+                    undoManagerThreat.executeCommand(command);
                 } else {
                     console.warn(`No Threagile data found for deleted cell ${cell.id}`);
                 }
             });
-        } finally {
-            graph.getModel().endUpdate();
-        }
         });
 
 
@@ -1014,7 +1137,7 @@ Editor.prototype.setFilename = function (value) {
 /**
  * Creates and returns a new undo manager.
  */
-Editor.prototype.createUndoManager = function () {
+Editor.prototype.createUndoManager = function (undoRedoManagerThreat) {
   var graph = this.graph;
   var undoMgr = new mxUndoManager();
 
@@ -1032,6 +1155,14 @@ Editor.prototype.createUndoManager = function () {
 
   // Keeps the selection in sync with the history
   var undoHandler = function (sender, evt) {
+    var eventName = evt.name; // Get the name of the event ("undo" or "redo")
+
+    if (eventName === mxEvent.UNDO) {
+       undoRedoManagerThreat.undo();
+
+    } else if (eventName === mxEvent.REDO) {
+        console.log("Processing REDO event in undoHandler...");
+    }
     var cand = graph.getSelectionCellsForChanges(
       evt.getProperty("edit").changes,
       function (change) {
@@ -3427,3 +3558,145 @@ Editor.prototype.findThreagileElementForCell = function(cell) {
     }
     return elementInfo;
 };
+/**
+ * Finds all locations (paths) where a specific technical asset ID is referenced
+ * within the 'technical_assets_inside' list of any trust boundary.
+ * Assumes the input model uses YAML library objects (like YAMLMap, YAMLSequence).
+ *
+ * @param {object} model - The parsed Threagile model object (likely a YAML Document or YAMLMap).
+ * @param {string} idToFind - The technical asset ID to search for within the trust boundaries.
+ * @returns {string[]} An array of path strings indicating where the idToFind was found.
+ *                     Example path: "trust_boundaries[Web DMZ].technical_assets_inside[1]"
+ */
+function findIdInTrustBoundaryAssets(model, idToFind) {
+    console.log(`>>> Starting search for Asset ID '${idToFind}' within trust boundary assets...`);
+    const foundPaths = []; // Array to store the paths where the ID is found
+
+    // Helper to check if a value is a YAML Map or Sequence
+    // NOTE: You might need to import Scalar from 'yaml' if not already globally available
+    const isYAMLMap = (val) => val && typeof val.get === 'function';
+    const isYAMLSequence = (val) => val && val.items && Array.isArray(val.items);
+
+    // --- Search within Trust Boundaries ---
+    if (!model || !model.has || !model.has("trust_boundaries")) {
+        console.log("  No 'trust_boundaries' section found in the model.");
+        return foundPaths; // Return empty array early
+    }
+
+    const trustBoundariesYAML = model.get("trust_boundaries");
+
+    if (!isYAMLMap(trustBoundariesYAML)) {
+        console.warn("  'trust_boundaries' section is not a valid YAML map. Cannot search.");
+        return foundPaths; // Return empty array
+    }
+
+    const trustBoundariesJS = trustBoundariesYAML.toJSON(); // Use JS version for easy key iteration
+
+    Object.keys(trustBoundariesJS).forEach(boundaryKey => {
+        // console.log(`  Checking Trust Boundary: [${boundaryKey}]`); // Optional: more verbose logging
+        const boundaryYAML = trustBoundariesYAML.get(boundaryKey);
+
+        if (!isYAMLMap(boundaryYAML)) {
+             console.warn(`    Skipping trust boundary [${boundaryKey}]: Not a valid YAML map.`);
+             return; // Continue to next boundary key
+        }
+
+        // Check specifically for the 'technical_assets_inside' key
+        if (boundaryYAML.has("technical_assets_inside")) {
+            const assetsInsideSeq = boundaryYAML.get("technical_assets_inside", true); // Get node itself
+
+            if (isYAMLSequence(assetsInsideSeq)) {
+                console.log(`    Checking 'technical_assets_inside' list within [${boundaryKey}] for ID: ${idToFind}`);
+
+                // *** Iterate backwards when removing elements ***
+                for (let index = assetsInsideSeq.items.length - 1; index >= 0; index--) {
+                    const item = assetsInsideSeq.items[index];
+                    // item might be a Scalar node, access its value for comparison
+                    // Make sure Scalar is defined/imported if you use instanceof
+                    const itemValue = (item && typeof item.value !== 'undefined' && item.constructor?.name === 'Scalar') ? item.value : item; // Safer check if Scalar isn't imported
+
+                    if (itemValue === idToFind) {
+                        // --- Calculate and store the path BEFORE deletion ---
+                        const fullPath = `trust_boundaries[${boundaryKey}].technical_assets_inside[${index}]`;
+                        console.log(`      FOUND reference to ID '${idToFind}' at path: ${fullPath}. Removing...`);
+                        foundPaths.push(fullPath); // Keep track of the path where it was found
+
+                        // --- Use the delete method on the YAMLSeq node ---
+                        const deleted = assetsInsideSeq.delete(index);
+
+                        if (deleted) {
+                            console.log(`      Successfully removed item originally at index ${index}.`);
+                        } else {
+                            // This should ideally not happen if the index was valid
+                            console.error(`      Failed to remove item at index ${index}.`);
+                        }
+
+                        // If you only want to remove the *first* occurrence you find,
+                        // you could add a 'break;' here after a successful deletion.
+                    }
+                }
+            } else {
+                 console.log(`    'technical_assets_inside' in [${boundaryKey}] is not a sequence.`);
+            }
+        } // <--- THIS CLOSING BRACE WAS MISSING
+
+        // Add any logic here that should happen *after* checking 'technical_assets_inside'
+        // for the current boundary, but before moving to the next boundary.
+
+    }); // End of forEach boundaryKey
+
+    console.log(`>>> Trust boundary asset search finished for '${idToFind}'. Found ${foundPaths.length} occurrences.`);
+    return foundPaths;
+}/**
+ * Parses a path string like "a.b[key].c[0]" into an array like ['a', 'b', 'key', 'c', 0].
+ * Handles simple dot notation and bracket notation for keys/indices.
+ * Converts numeric indices within brackets to numbers.
+ *
+ * @param {string} pathString The path string to parse.
+ * @returns {(string|number)[]} An array of path segments.
+ */
+function parsePathString(pathString) {
+    if (!pathString) return [];
+    // Regex to match segments: either non-bracket characters followed by a dot (or end of string),
+    // or characters inside brackets.
+    // Matches ".key", "[key]", "[0]" parts, capturing the content.
+    const segments = [];
+    const regex = /\.([^.[\]]+)|\[([^\]]+)]/g; // Matches .key or [key] or [0]
+    let lastIndex = 0;
+
+    // Handle the first part if it doesn't start with '.' or '['
+    const firstDelimiter = pathString.search(/[.[]/);
+    if (firstDelimiter === 0) {
+        // Path starts with delimiter, handled by loop
+    } else if (firstDelimiter === -1) {
+        // Path is just a single key
+        segments.push(pathString);
+        lastIndex = pathString.length;
+    } else {
+        segments.push(pathString.substring(0, firstDelimiter));
+        lastIndex = firstDelimiter;
+    }
+
+    let match;
+    regex.lastIndex = lastIndex; // Start searching from the correct position
+
+    while ((match = regex.exec(pathString)) !== null) {
+        // match[1] is for .key notation, match[2] is for [key] or [0] notation
+        const segment = match[1] || match[2];
+        // Try converting bracketed segments to numbers if they look numeric
+        if (match[2] && /^\d+$/.test(segment)) {
+            segments.push(parseInt(segment, 10));
+        } else {
+            segments.push(segment);
+        }
+        lastIndex = regex.lastIndex;
+    }
+
+    // Handle potential trailing characters if regex didn't consume everything (less likely with this regex)
+    // if (lastIndex < pathString.length) {
+    //    segments.push(pathString.substring(lastIndex));
+    // }
+
+    return segments;
+}
+

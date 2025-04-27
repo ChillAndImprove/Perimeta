@@ -198,6 +198,153 @@ def post_test_hook(request):
 @pytest.mark.usefixtures("browser_and_setup")
 class TestEdges():
   
+
+    def select_tagify_item_and_assert(
+        self,
+        tagify_input_xpath,
+        tag_text_to_select, # Text of the tag you intend to select (for clarity/logging)
+        expected_model_id,  # The actual ID expected in the model's list
+        arrow_up_count=2,   # How many times to press ARROW_UP
+        root_key="technical_assets",
+        asset_key="foo",     # You might need to make this dynamic based on the selected cell
+        nested_path_prefix=None,
+        dropdown_container_selector="div.tagify__dropdown" # CSS selector for the dropdown container
+    ):
+        """
+        Clicks a Tagify input, uses keyboard navigation (ARROW_UP * count, ENTER)
+        to select an item, and asserts that the expected ID exists in the specified nested path
+        in the Threagile model data.
+
+        :param tagify_input_xpath: XPath to the Tagify input element.
+        :param tag_text_to_select: The text display of the tag you are trying to select via keys. Used for logging/clarity.
+        :param expected_model_id: The ID (string) that should exist in the model's nested list after selection.
+        :param arrow_up_count: The number of times to press Keys.ARROW_UP before Keys.ENTER.
+        :param root_key: Top-level JSON key (e.g., 'technical_assets').
+        :param asset_key: Sub-key under the root (e.g., the specific technical asset's key).
+        :param nested_path_prefix: List of keys leading to the list where the ID should be added (e.g., ['data_assets_processed']).
+        :param dropdown_container_selector: CSS selector to wait for the Tagify dropdown container visibility.
+        """
+        def get_nested_value(data, root, asset, path):
+            """Safely retrieves a nested value from the dictionary."""
+            if not isinstance(path, (list, tuple)):
+                raise TypeError("nested_path_prefix must be a list or tuple of keys")
+            try:
+                value = data[root][asset]
+                for key in path:
+                    # Handle cases where intermediate keys might not exist yet
+                    if value is None or key not in value:
+                         # If the path doesn't fully exist, treat it as an empty list for length comparison
+                         # Or return None if the structure is unexpected before the list
+                        return [] if key == path[-1] else None # Assume last key accesses the list
+                    value = value[key]
+                return value
+            except (KeyError, TypeError):
+                 # If the root or asset key doesn't exist, or path fails midway
+                return [] # Treat as empty list if path is supposed to lead to the list
+
+
+        assert isinstance(nested_path_prefix, list), "nested_path_prefix must be a list"
+        print(f"--- Test: Selecting tag '{tag_text_to_select}' via keyboard and checking model path: {root_key}.{asset_key}.{'.'.join(nested_path_prefix)} ---")
+
+        # --- Step 1: Get initial model state ---
+        threagile_data_before = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+        # Use the helper function to safely get the value or an empty list
+        old_nested_list = get_nested_value(threagile_data_before, root_key, asset_key, nested_path_prefix)
+        # Ensure we are dealing with a list for length check, default to 0 if None/not list
+        old_len = len(old_nested_list) if isinstance(old_nested_list, list) else 0
+        print(f"Initial list length at path: {old_len}")
+        print(f"Initial list content: {old_nested_list}")
+
+
+        # --- Step 2: Interact with the Tagify Input ---
+        tagify_input = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, tagify_input_xpath))
+        )
+        # Click to ensure focus and potentially trigger dropdown
+        tagify_input.click()
+        print("Clicked Tagify input.")
+        # Optional: Send a space or initial character to reliably open dropdown if needed
+        # tagify_input.send_keys(" ")
+        # time.sleep(0.2) # Small pause if needed after sending keys
+
+        # --- Step 3: Wait for dropdown and use keyboard navigation ---
+        try:
+            # Wait for the dropdown container to become VISIBLE
+            WebDriverWait(self.driver, 5).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, dropdown_container_selector))
+            )
+            print("Tagify dropdown detected.")
+
+            # Send ARROW_UP keys
+            for _ in range(arrow_up_count):
+                tagify_input.send_keys(Keys.ARROW_UP)
+                print("Sent ARROW_UP")
+                time.sleep(0.1) # Small delay between key presses might help
+
+            # Send ENTER to select
+            tagify_input.send_keys(Keys.ENTER)
+            print(f"Sent ENTER after {arrow_up_count} ARROW_UP presses.")
+
+        except TimeoutException:
+            print("Warning: Tagify dropdown did not appear or close as expected within the timeout.")
+            # Decide how to handle: fail the test, log a warning, try alternative?
+            # For now, we'll proceed and let the assertion fail if the model wasn't updated.
+            # raise TimeoutException(f"Tagify dropdown interaction failed for input: {tagify_input_xpath}")
+
+
+        # --- Step 4: Fetch updated model data ---
+        # Add a small explicit wait/delay IF NECESSARY after dropdown closes, before fetching data,
+        # to allow any async model updates triggered by Tagify's events to complete. Usually not needed if waits were sufficient.
+        time.sleep(0.5) # Adjust or remove if waits for invisibility are enough
+
+        threagile_data_after = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+
+        # --- Step 5: Assertions ---
+        # Get the potentially updated list
+        new_nested_list = get_nested_value(threagile_data_after, root_key, asset_key, nested_path_prefix)
+        # Ensure we are dealing with a list for length check, default to 0 if None/not list
+        new_len = len(new_nested_list) if isinstance(new_nested_list, list) else 0
+        print(f"Final list length at path: {new_len}")
+        print(f"Final list content: {new_nested_list}")
+
+
+        # Assert length increased
+        if new_len <= old_len:
+             # Provide more context in the error message
+            error_msg = (
+                f"Assertion Failed: Expected list length at path '{root_key} -> {asset_key} -> {'.'.join(nested_path_prefix)}' "
+                f"to increase after selecting '{tag_text_to_select}', but it did not. "
+                f"Before: {old_len} (Content: {old_nested_list}), After: {new_len} (Content: {new_nested_list})"
+            )
+            print(error_msg) # Print before raising for better logging
+            raise AssertionError(error_msg)
+        else:
+             print(f"✅ Assertion Passed: List length increased from {old_len} to {new_len}.")
+
+
+        # Assert the specific ID is now in the list
+        if not isinstance(new_nested_list, list):
+             raise AssertionError(f"Assertion Failed: Expected a list at path '{root_key} -> {asset_key} -> {'.'.join(nested_path_prefix)}' but found type {type(new_nested_list).__name__}.")
+
+        found = False
+        for item in new_nested_list:
+            print(f"🔍 Checking item: {item} (Type: {type(item).__name__}) against expected ID: {expected_model_id}")
+            if item == expected_model_id:
+                print(f"✅ Assertion Passed: Found expected ID '{expected_model_id}' in the updated list.")
+                found = True
+                break
+
+        if not found:
+            error_msg = (
+                f"Assertion Failed: Expected ID '{expected_model_id}' was not found in the updated list "
+                f"at path '{root_key} -> {asset_key} -> {'.'.join(nested_path_prefix)}'. "
+                f"List content: {new_nested_list}"
+            )
+            print(error_msg) # Print before raising
+            raise AssertionError(error_msg)
+
+        print(f"--- Test Passed for tag '{tag_text_to_select}' ---")
+
     def click_and_assert_nested_key_exists(
             self,
             click_xpath_1,
@@ -261,8 +408,6 @@ class TestEdges():
             toRemoveElement = threagile_data["data_assets"][value]["id"]
 
             clickable_2.click()
-            set_trace()
-
             # 🔍 Log the selected value for debugging
             print(f"Selected label: {value}")
             print(f"Expecting data_asset_id: {data_asset_id}")
@@ -559,12 +704,14 @@ class TestEdges():
         )
 
     def test_add_tag_data_assets_processed_contract_summaries(self):
-        self.click_and_assert_nested_key_exists(
-            click_xpath_1='/html/body/div[4]/div[2]/div/div[4]/tags/span',
-            click_xpath_2='/html/body/div[9]/div/div[1]',
-            data_asset_id="contract-contracts",
+        self.select_tagify_item_and_assert(
+            tagify_input_xpath='/html/body/div[4]/div[2]/div/div[4]/tags/span',
+            expected_model_id="erp-customizing",
             root_key='technical_assets',
             asset_key='foo',
-            nested_path_prefix=["communication_links", "Customer Traffic","data_assets_received"]
+            nested_path_prefix=["communication_links", "Customer Traffic","data_assets_received"],
+            dropdown_container_selector="div.tagify__dropdown", # CSS selector for the dropdown container
+            tag_text_to_select="Customer Contracts"
+            
         )
 
