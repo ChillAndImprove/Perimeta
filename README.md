@@ -3,9 +3,9 @@
 </p>
 
 
-# Triangle
+# Triangle  /ˈtraɪˌæŋɡəl 
 
-Welcome to Triangle! This open-source project aims to enhance your experience with threat modeling.
+Welcome to Triangle!  This open-source project aims to enhance your experience with threat modeling.
 
 ![showcase](finished.gif)
 
