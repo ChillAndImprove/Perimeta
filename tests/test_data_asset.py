@@ -32,7 +32,7 @@ def browser_and_setup(request):
     driver.get("http://0.0.0.0:8000/indexTests.html")
     driver.set_window_size(1854, 1011)
     driver.switch_to.frame(0)
-    driver.find_element(By.CSS_SELECTOR, "td:nth-child(1) > .geBtn").click()
+    driver.find_element(By.ID, "customer_portal_erp_threat_model").click()
     driver.switch_to.default_content()
 
     request.cls.driver = driver
@@ -604,26 +604,61 @@ class TestDataAsset():
             )
 
 
+
     def check_ul_items_present(self, ul_xpath, expected_items):
         """
-        Check if all expected items are present as visible labels in the UL.
+        Check if all expected items are present as visible labels in the UL,
+        waiting for elements to appear.
 
-        :param driver: Selenium WebDriver instance
         :param ul_xpath: XPATH to the <ul> element
         :param expected_items: List of expected strings (e.g., ["Customer Contracts", "Customer Accounts"])
-        :return: True if all are present, False otherwise
+        :return: True if all are present within the timeout, False otherwise
         """
-        # Find the <ul> element
-        ul_element = self.driver.find_element(By.XPATH, ul_xpath)
-        
-        # Get all the <li> child elements and extract the label text (from the inner <div>)
-        actual_items = [div.text.strip(':') for div in ul_element.find_elements(By.XPATH, ".//li/div/div")]
+        if not expected_items: # Handle empty expected list
+             print("Warning: No expected items provided.")
+             return True # Or False, depending on desired behaviour
 
-        # Optionally print them for debug
-        print("Actual items found:", actual_items)
+        try:
+            # 1. Wait for the UL element to be present (or visible)
+            wait = WebDriverWait(self.driver, self.timeout)
+            ul_element = wait.until(EC.visibility_of_element_located((By.XPATH, ul_xpath)))
+            # Or EC.presence_of_element_located if visibility isn't strictly required for the UL itself
 
-        # Check if all expected items are in the actual items
-        return all(item in actual_items for item in expected_items)
+            # 2. Wait specifically for the list items to contain the expected text
+            #    This is more robust than just finding the elements immediately after the UL.
+            #    We define a custom wait condition using a lambda function.
+            def check_all_items_found(driver):
+                # Re-find elements within the lambda to get the latest state
+                current_ul = driver.find_element(By.XPATH, ul_xpath) # Find UL again inside lambda
+                # Consider waiting for *at least one* child div first if the list can be initially empty
+                # wait.until(EC.presence_of_element_located((By.XPATH, f"{ul_xpath}//li/div/div")))
+                actual_items_elements = current_ul.find_elements(By.XPATH, ".//li/div/div")
+                actual_items_text = [div.text.strip(':') for div in actual_items_elements if div.is_displayed()] # Check visibility too?
+                print(f"Waiting... Actual items found: {actual_items_text}") # Debugging inside wait
+                return all(item in actual_items_text for item in expected_items)
+
+            # Execute the custom wait
+            wait.until(check_all_items_found)
+
+            print(f"Success: All expected items {expected_items} found.")
+            return True
+
+        except TimeoutException:
+            print(f"Timeout: Failed to find all expected items {expected_items} within {self.timeout} seconds.")
+            # Optionally, find whatever items *were* present for better debugging
+            try:
+                 ul_element = self.driver.find_element(By.XPATH, ul_xpath)
+                 actual_items = [div.text.strip(':') for div in ul_element.find_elements(By.XPATH, ".//li/div/div")]
+                 print("Actual items found at timeout:", actual_items)
+                 missing_items = [item for item in expected_items if item not in actual_items]
+                 print("Missing items:", missing_items)
+            except Exception as e:
+                 print(f"Could not retrieve actual items after timeout: {e}")
+            return False
+        except Exception as e:
+             # Catch other potential exceptions like StaleElementReferenceException
+             print(f"An error occurred: {e}")
+             return False
 
     def test_check_if_import_of_all_data_assets_worked(self):
         ul_xpath = "/html/body/div[4]/div[2]/div[2]/ul"

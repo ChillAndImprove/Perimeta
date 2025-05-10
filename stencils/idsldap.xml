@@ -1,0 +1,49 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.directory, mxgraph.servers -->
+
+<shape name="identityStoreLdap" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Identity Symbol (Person Icon) -->
+        <save/>
+        <strokecolor color="#000000"/> <!-- Black Stroke -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned Left -->
+        <!-- Head -->
+        <ellipse x="40" y="65" w="40" h="40"/>
+        <fillstroke/>
+        <!-- Body -->
+        <roundrect x="30" y="107" w="60" h="43" arcsize="13"/> <!-- Body slightly wider/shorter -->
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. LDAP Directory Tree Symbol -->
+        <save/>
+        <strokecolor color="#145A32"/> <!-- Dark Green -->
+        <strokewidth width="3"/> <!-- Thicker lines for tree -->
+        <!-- Positioned Right -->
+        <!-- Trunk -->
+        <path> <move x="130" y="40"/> <line x="130" y="80"/> </path> <stroke/>
+        <!-- Main Branches -->
+        <path> <move x="130" y="80"/> <line x="100" y="115"/> </path> <stroke/> <!-- Left Branch -->
+        <path> <move x="130" y="80"/> <line x="160" y="115"/> </path> <stroke/> <!-- Right Branch -->
+        <!-- Sub-Branches -->
+        <path> <move x="100" y="115"/> <line x="85" y="145"/> </path> <stroke/> <!-- Sub Left 1 -->
+        <path> <move x="100" y="115"/> <line x="115" y="145"/> </path> <stroke/> <!-- Sub Left 2 -->
+        <path> <move x="160" y="115"/> <line x="145" y="145"/> </path> <stroke/> <!-- Sub Right 1 -->
+        <path> <move x="160" y="115"/> <line x="175" y="145"/> </path> <stroke/> <!-- Sub Right 2 -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

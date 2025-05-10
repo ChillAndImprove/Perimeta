@@ -1,268 +1,249 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Open Diagram</title>
-    <link rel="stylesheet" type="text/css" href="styles/grapheditor.css" />
+    <title>Load Threat Model</title>
+    <!-- Link CSS -->
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <style>
+        /* [Your existing CSS styles here] */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 15px;
+            font-size: 10pt;
+            background-color: #f8f9fa;
+            margin: 0;
+        }
+        h2 {
+            margin-top: 0; margin-bottom: 15px; color: #343a40; font-size: 1.4em;
+            border-bottom: 1px solid #dee2e6; padding-bottom: 5px;
+        }
+        h3 {
+            margin-top: 15px; margin-bottom: 10px; color: #495057; font-size: 1.1em;
+        }
+        section {
+            margin-bottom: 20px; padding: 15px; background-color: #ffffff;
+            border: 1px solid #dee2e6; border-radius: 4px;
+        }
+        .geBtn { /* Basic Button Style */
+            display: inline-block; font-weight: 400; color: #212529; text-align: center;
+            vertical-align: middle; cursor: pointer; user-select: none; background-color: #e9ecef;
+            border: 1px solid #ced4da; padding: 0.375rem 0.75rem; font-size: 1rem;
+            line-height: 1.5; border-radius: 0.25rem; margin-right: 5px; margin-bottom: 5px;
+        }
+        .geBtn:hover { background-color: #ced4da; border-color: #adb5bd; }
+        .gePrimaryBtn { color: #fff; background-color: #007bff; border-color: #007bff; }
+        .gePrimaryBtn:hover { background-color: #0056b3; border-color: #004085; }
+        .gePrimaryBtn:disabled { background-color: #6c757d; border-color: #6c757d; cursor: not-allowed; opacity: 0.65; }
+
+        .standard-flag { /* Renamed class */
+            width: 32px; height: auto; margin-right: 10px; cursor: pointer;
+            border: 2px solid transparent; border-radius: 3px; vertical-align: middle;
+            transition: border-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .standard-flag:hover { border-color: #adb5bd; transform: scale(1.1); }
+        .standard-flag.selected {
+            border-color: #007bff; box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+        #upload-section input[type="file"] { display: block; margin-bottom: 10px; font-size: 0.9em; }
+        #openSupported { font-size: 0.85em; color: #6c757d; margin-top: 5px; }
+        .button-bar { margin-top: 20px; text-align: right; padding-top: 15px; border-top: 1px solid #dee2e6; }
+    </style>
 </head>
+<body>
+
+    <h2>Load or Start New Threat Model</h2>
+
+    <!-- Examples Section (unchanged) -->
+    <section id="examples-section">
+        <h3>Start with an Example:</h3>
+        <button type="button" id="customer_portal_erp_threat_model" class="geBtn exampleBtn" data-path="backend/customer_portal_erp_threat_model.yaml">Portal + ERP</button>
+        <button type="button" id="basic_webapp" class="geBtn exampleBtn" data-path="backend/basic_webapp_threat_model.yaml">Basic Web App</button>
+        <button type="button" id="simple_api_threat_model" class="geBtn exampleBtn" data-path="backend/simple_api_threat_model.yaml">Simple API</button>
+        <button type="button" id="kubernetes_api_threat_model" class="geBtn exampleBtn" data-path="backend/kubernetes.yaml">WebGIS with Kubernetes</button>
+        <!-- Add more example buttons -->
+    </section>
+
+    <!-- Threat Standard / Region Selection Section -->
+    <section id="standard-section"> <!-- Renamed ID -->
+        <h3>Select Threat Standard / Region:</h3> <!-- Changed Heading -->
+        <!--
+            NOTE: 'data-standard' attribute holds the key identifier for the standard.
+                  'title' attribute provides user-friendly tooltip.
+        -->
+        <img src="flags/de.png" alt="German BSI" class="standard-flag" data-standard="BSI" title="German BSI Standards">
+        <img src="flags/us.png" alt="US NIST/NSI" class="standard-flag" data-standard="NIST" title="US NIST/NSI Standards">
+        <img src="flags/fr.png" alt="French ANSSI" class="standard-flag" data-standard="ANSSI" title="French ANSSI Standards (Future)">
+        <!-- Add more flags/standards as needed -->
+         <img src="flags/eu.png" alt="EU ENISA/Generic" class="standard-flag" data-standard="GENERIC" title="Generic / EU ENISA Baseline"> <!-- Example Generic/Default -->
+
+    </section>
+
+    <!-- Upload Section (unchanged structure) -->
+    <section id="upload-section">
+        <h3>Upload Your Own Model:</h3>
+        <form method="POST" enctype="multipart/form-data" action="" name="openForm" id="openForm" onsubmit="return handleSubmit();" accept-charset="UTF-8">
+            <input type="file" name="upfile" id="fileInput" onchange="fileChanged()" accept=".yaml, .yml, .xml, .svg, .txt, .mxe">
+            <div id="openSupported">
+                Supported formats: .yaml, .yml (others for diagram import)
+            </div>
+        </form>
+    </section>
+
+    <!-- Buttons Bar (unchanged structure) -->
+    <div class="button-bar">
+        <input type="button" id="cancelButton" class="geBtn" value="Cancel" onclick="hideWindow(true);">
+        <input type="submit" form="openForm" id="openButton" class="geBtn gePrimaryBtn" value="Open" disabled="disabled">
+    </div>
+
 <script type="text/javascript">
-	// Reads files locally
-	function handleFiles(files)
-	{
-		for (var i = 0; i < files.length; i++)
-		{
-			(function(file)
-			{
-				// Small hack to support import
-				if (window.parent.openNew)
-				{
-					window.parent.open(window.parent.location.href);
-				}
-				
-				var reader = new FileReader();
-				reader.onload = function(e)
-				{
-					window.parent.openFile.setData(e.target.result, file.name);
-				};
-				reader.onerror = function(e)
-				{
-					console.log(e);
-				};
-				reader.readAsText(file);
-			})(files[i]);
-		}
-	};
-/**
- * Fetches the default threagile.yaml model file from a location
- * relative to the application's deployment root and processes it.
- * Works correctly whether deployed at the root or in a subdirectory (like GitHub Pages).
- */
-function useDefaultGraph() {
-    // Define the path RELATIVE to the current page/application root.
-    // The browser will resolve this correctly against the base URL,
-    // e.g., https://username.github.io/ThreagilePlus/wasm/Threagile/threagile.yaml
-    const relativePath = 'wasm/Threagile/threagile.yaml';
 
-    console.log(`Attempting to fetch default model from relative path: ${relativePath}`);
+    // --- File Handling (handleFiles, handleSubmit - unchanged) ---
+    function handleFiles(files) { /* ... as before ... */
+        if (!files || files.length === 0) return;
+        for (var i = 0; i < files.length; i++) {
+            (function(file) {
+                if (window.parent.openNew) { window.parent.open(window.parent.location.href); }
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    if (window.parent.openFile && typeof window.parent.openFile.setData === 'function') {
+                        window.parent.openFile.setData(e.target.result, file.name);
+                    } else { console.error("Parent 'openFile.setData' not found."); alert("Error: Cannot process file."); }
+                };
+                reader.onerror = function(e) { console.error("File reading error:", e); alert(`Error reading file: ${file.name}`); };
+                reader.readAsText(file);
+            })(files[i]);
+        }
+    }
+    function handleSubmit() { /* ... as before ... */
+        var form = document.getElementById('openForm');
+        var fileInput = document.getElementById('fileInput');
+        if (window.File && window.FileReader && fileInput.files.length > 0) {
+            handleFiles(fileInput.files); return false;
+        } else if (fileInput.files.length > 0) { /* Fallback logic if needed */
+            if (window.parent.mxUtils) window.parent.mxUtils.alert(window.parent.mxResources.get('invalidOrMissingFile'));
+            return false;
+        } else {
+             if (window.parent.mxUtils) window.parent.mxUtils.alert(window.parent.mxResources.get('invalidOrMissingFile'));
+             return false;
+        }
+    }
 
-    fetch(relativePath)
-        .then(response => {
-            if (!response.ok) {
-                // Throw an error with more context including the resolved URL
-                throw new Error(`HTTP error! status: ${response.status} while fetching ${response.url}`);
-            }
-            // Log the actual URL fetch used (for debugging)
-            console.log(`Successfully initiated fetch for: ${response.url}`);
-            return response.text();
-        })
-        .then(data => {
-            // Create a simulated file from the fetched content
-            const blob = new Blob([data], { type: 'text/yaml' }); // Use consistent quotes
-            const filename = relativePath.split('/').pop() || 'threagile.yaml'; // Get filename from path
-            const file = new File([blob], filename, { type: 'text/yaml' });
+    // --- Example Loading (loadExample - unchanged) ---
+    function loadExample(filePath) { /* ... as before ... */
+        fetch(filePath)
+            .then(response => { if (!response.ok) throw new Error(`HTTP ${response.status}`); return response.text(); })
+            .then(data => {
+                const filename = filePath.split('/').pop() || 'example.yaml';
+                const blob = new Blob([data], { type: 'text/yaml' });
+                const file = new File([blob], filename, { type: 'text/yaml' });
+                handleFiles([file]);
+            })
+            .catch(error => { console.error(`Error loading ${filePath}:`, error); alert(`Could not load example: ${filePath}`); });
+    }
 
-            // Ensure handleFiles function exists before calling
-            if (typeof handleFiles === 'function') {
-                 handleFiles([file]);
-            } else {
-                console.error('Error: handleFiles function is not defined.');
-                alert('Error: Cannot process the default file, handler function is missing.');
-            }
-        })
-        .catch(error => {
-            console.error(`Error loading default YAML from relative path ${relativePath}:`, error);
-            // Give a slightly more informative alert
-            alert(`Could not load the default example file (${relativePath}). Please check the browser console for details. Error: ${error.message}`);
+    // --- Threat Standard Selection ---
+    function selectThreatStandard(standardCode, flagElement) {
+        console.log(`Threat standard selected: ${standardCode}`);
+
+        // 1. Visually update flags
+        document.querySelectorAll('.standard-flag').forEach(flag => { // Use new class
+            flag.classList.remove('selected');
         });
-}
+        if (flagElement) {
+            flagElement.classList.add('selected');
+        }
 
-	// Handles form-submit by preparing to process response
-	function handleSubmit()
-	{
-		var form = window.openForm || document.getElementById('openForm');
-		
-		// Checks for support of the File API for local file access
-		// except for files where the parse is on the server
-		if (window.parent.Graph.fileSupport && form.upfile.files.length > 0)
-		{
-			handleFiles(form.upfile.files);
-			
-			return false;
-		}
-       else
-		{
-			if (/(\.xml)$/i.test(form.upfile.value) || /(\.txt)$/i.test(form.upfile.value) ||
-				/(\.mxe)$/i.test(form.upfile.value))
-			{
-				// Small hack to support import
-				if (window.parent.openNew)
-				{
-					window.parent.open(window.parent.location.href);
-				}
-				
-				// NOTE: File is loaded via JS injection into the iframe, which in turn sets the
-				// file contents in the parent window. The new window asks its opener if any file
-				// contents are available or waits for the contents to become available.
-				return true;
-			}
-			else
-			{
-				window.parent.mxUtils.alert(window.parent.mxResources.get('invalidOrMissingFile'));
-				
-				return false;
-			}
-		}
-	};
-	
-	// Hides this dialog
-	function hideWindow(cancel)
-	{
-		window.parent.openFile.cancel(cancel);
-	}
-	
-	function fileChanged()
-	{
-		var form = window.openForm || document.getElementById('openForm');
-		var openButton = document.getElementById('openButton');
-		
-		if (form.upfile.value.length > 0)
-		{
-			openButton.removeAttribute('disabled');
-		}
-		else
-		{
-			openButton.setAttribute('disabled', 'disabled');
-		}		
-	}
+        // 2. Communicate selected standard to parent window ** IMPORTANT **
+        // Parent needs a function like 'setThreatStandardContext'
+        if (window.parent && typeof window.parent.setThreatStandardContext === 'function') {
+             window.parent.setThreatStandardContext(standardCode); // Pass 'BSI', 'NIST', etc.
+             console.log(`Called parent.setThreatStandardContext with: ${standardCode}`);
+        } else {
+             console.warn("Parent window does not have a 'setThreatStandardContext' function. Standard selection will not be applied.");
+             // Optional: Alert user
+             // alert("Standard selected, but the main application needs configuration to apply it.");
+        }
 
-	function main()
-	{
-		if (window.parent.Editor.useLocalStorage)
-		{
-			document.body.innerHTML = '';
-			var div = document.createElement('div');
-			div.style.fontFamily = 'Arial';
-			
-			if (localStorage.length == 0)
-			{
-				window.parent.mxUtils.write(div, window.parent.mxResources.get('noFiles'));
-			}
-			else
-			{
-				var keys = [];
-				
-				for (var i = 0; i < localStorage.length; i++)
-				{
-					keys.push(localStorage.key(i));
-				}
-				
-				// Sorts the array by filename (key)
-				keys.sort(function (a, b)
-				{
-				    return a.toLowerCase().localeCompare(b.toLowerCase());
-				});
-				
-				for (var i = 0; i < keys.length; i++)
-				{
-					var link = document.createElement('a');
-					link.style.fontDecoration = 'none';
-					link.style.fontSize = '14pt';
-					var key = keys[i];
-					window.parent.mxUtils.write(link, key);
-					link.style.cursor = 'pointer';
-					div.appendChild(link);
-					
-					var img = document.createElement('span');
-					img.className = 'geSprite geSprite-delete';
-					img.style.position = 'relative';
-					img.style.cursor = 'pointer';
-					img.style.display = 'inline-block';
-					div.appendChild(img);
-					
-					window.parent.mxUtils.br(div);
-					
-					window.parent.mxEvent.addListener(img, 'click', (function(k)
-					{
-						return function()
-						{
-							if (window.parent.mxUtils.confirm(window.parent.mxResources.get('delete') + ' "' + k + '"?'))
-							{
-								localStorage.removeItem(k);
-								window.location.reload();
-							}
-						};
-					})(key));
+        // 3. Persist selection (optional - using localStorage in this dialog)
+        try {
+             localStorage.setItem('selectedThreatStandard', standardCode);
+        } catch (e) {
+            console.warn("Could not save threat standard preference to localStorage.");
+        }
+    }
 
-					window.parent.mxEvent.addListener(link, 'click', (function(k)
-					{
-						return function()
-						{
-							try
-							{
-								window.parent.open(window.parent.location.href);
-								window.parent.openFile.setData(localStorage.getItem(k), k);
-							}
-							catch (e)
-							{
-								window.parent.mxUtils.alert(e.message);
-							}
-						};
-					})(key));
-				}
-			}
+    // --- UI Interaction (hideWindow, fileChanged - unchanged) ---
+    function hideWindow(cancel) { /* ... as before ... */
+         if (window.parent.openFile && typeof window.parent.openFile.cancel === 'function') {
+            window.parent.openFile.cancel(cancel);
+        } else { console.error("Parent 'openFile.cancel' not found."); window.close(); }
+    }
+    function fileChanged() { /* ... as before ... */
+        var openButton = document.getElementById('openButton');
+        var fileInput = document.getElementById('fileInput');
+        openButton.disabled = !(fileInput.value.length > 0);
+    }
 
-			window.parent.mxUtils.br(div);
-			window.parent.mxUtils.br(div);
-			
-			var cancelBtn = window.parent.mxUtils.button(window.parent.mxResources.get('cancel'), function()
-			{
-				hideWindow(true);
-			});
-			cancelBtn.className = 'geBtn';
-			div.appendChild(cancelBtn);
-			
-			document.body.appendChild(div);
-		}
-		else
-		{
-			var editLink = document.getElementById('editLink');
-			var openButton = document.getElementById('openButton');
-			openButton.value = window.parent.mxResources.get(window.parent.openKey || 'open');
-			var cancelButton = document.getElementById('cancelButton');
-			cancelButton.value = window.parent.mxResources.get('cancel');
-			var supportedText = document.getElementById('openSupported');
-			supportedText.innerHTML = window.parent.mxResources.get('openSupported');
-			var form = window.openForm || document.getElementById('openForm');
+    // --- Initialization ---
+    function initializeDialog() {
+        // Set button text (unchanged)
+        var openButton = document.getElementById('openButton');
+        var cancelButton = document.getElementById('cancelButton');
+         if (window.parent.mxResources) {
+             openButton.value = window.parent.mxResources.get(window.parent.openKey || 'open', null, 'Open');
+             cancelButton.value = window.parent.mxResources.get('cancel', null, 'Cancel');
+        } // else defaults are set in HTML
 
-			form.setAttribute('action', window.parent.OPEN_URL);
-		}
-	};
+        // Add event listeners for example buttons (unchanged)
+        document.querySelectorAll('.exampleBtn').forEach(button => {
+            button.addEventListener('click', function() { loadExample(this.getAttribute('data-path')); });
+        });
+
+        // Add event listeners for standard flags
+        document.querySelectorAll('.standard-flag').forEach(flag => { // Use new class
+            flag.addEventListener('click', function() {
+                const standardCode = this.getAttribute('data-standard'); // Use new attribute
+                if (standardCode) {
+                    selectThreatStandard(standardCode, this); // Call updated function
+                } else { console.error("Standard flag missing data-standard attribute."); }
+            });
+        });
+
+        // Restore and apply previous standard selection (optional)
+        try {
+            const savedStandard = localStorage.getItem('selectedThreatStandard'); // Use new key
+            let flagToSelect = null;
+            if (savedStandard) {
+                 flagToSelect = document.querySelector(`.standard-flag[data-standard="${savedStandard}"]`);
+            }
+            // Default to GENERIC or NIST if nothing saved or element not found
+            if (!flagToSelect) {
+                 flagToSelect = document.querySelector('.standard-flag[data-standard="GENERIC"]') || document.querySelector('.standard-flag[data-standard="NIST"]');
+            }
+
+            if (flagToSelect) {
+                // Select visually without triggering parent call on load
+                document.querySelectorAll('.standard-flag').forEach(flag => flag.classList.remove('selected'));
+                flagToSelect.classList.add('selected');
+                console.log(`Initial standard set/restored to: ${flagToSelect.getAttribute('data-standard')}`);
+                 // *** Optional: If you WANT the parent to know the initial/restored standard on dialog load: ***
+                 // selectThreatStandard(flagToSelect.getAttribute('data-standard'), flagToSelect);
+            }
+
+        } catch(e) {
+            console.warn("Could not read standard preference from localStorage.");
+             // Apply a visual default if localStorage fails
+             const defaultFlag = document.querySelector('.standard-flag[data-standard="GENERIC"]') || document.querySelector('.standard-flag[data-standard="NIST"]');
+             if (defaultFlag) defaultFlag.classList.add('selected');
+        }
+
+        fileChanged(); // Ensure initial button state is correct
+    }
+
+    document.addEventListener('DOMContentLoaded', initializeDialog);
+
 </script>
-<body onload="main();">
-<form method="POST" enctype="multipart/form-data" action="" name="openForm" id="openForm" onsubmit="return handleSubmit();" accept-charset="UTF-8"  >
-<table style="width:100%;">
-<tr>
-<td style="height:40px;vertical-align:top;" colspan="2">
-<input type="file" name="upfile" onchange="fileChanged()" accept=".xml, .yaml, .svg">
-</td>
-</tr>
-<tr>
-<td colspan="2" height="120px" id="openSupported" style="font-family:arial;color:grey;font-size:9pt;vertical-align:top;text-align:left;">
-</td>
-</tr>
-
-<tr>
-<td>
-	<button type="button" class="geBtn" onclick="useDefaultGraph()" >
-    Example
-  </button>
-</td>
-<td style="vertical-align:middle;text-align:right;white-space:nowrap;">
-<input type="button" id="cancelButton" class="geBtn" value="Cancel" onclick="hideWindow(true);">
-<input type="submit" id="openButton" class="geBtn gePrimaryBtn" value="Open" disabled="disabled" >
-</td>
-</tr>
-</table>
-</form>
 </body>
 </html>
+

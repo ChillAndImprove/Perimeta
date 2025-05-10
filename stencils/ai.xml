@@ -1,0 +1,62 @@
+<shapes name="mxgraph.compute"> <!-- Or mxgraph.general, mxgraph.ai -->
+
+<shape name="ai" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Stylized Head/Brain Outline -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Grey/Blue Border -->
+        <fillcolor color="#ABB2B9"/>   <!-- Medium Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- Simplified profile view using path -->
+        <path>
+            <move x="70" y="35"/> <!-- Start Forehead Top -->
+            <quad x1="40" y1="60" x="65" y="95"/> <!-- Forehead Curve -->
+            <quad x1="80" y1="135" x="70" y="155"/> <!-- Nose/Mouth/Chin Curve -->
+            <line x="85" y="165"/> <!-- Neck Bottom Left -->
+            <quad x1="110" y1="175" x="135" y="160"/> <!-- Back of Neck/Head Bottom -->
+            <quad x1="170" y1="100" x="130" y="35"/> <!-- Back/Top of Head -->
+            <quad x1="100" y1="20" x="70" y="35"/> <!-- Top Curve to Start -->
+        </path>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Internal Circuit/Node Elements -->
+        <save/>
+        <!-- Nodes (Circles) -->
+        <fillcolor color="#3B82F6"/>   <!-- Bright Blue Nodes -->
+        <strokecolor color="#FFFFFF"/> <!-- White border for contrast -->
+        <strokewidth width="1.5"/>
+        <ellipse x="85" y="55" w="15" h="15"/> <!-- Node 1 (Upper Front) -->
+        <fillstroke/>
+        <ellipse x="120" y="75" w="15" h="15"/> <!-- Node 2 (Upper Back) -->
+        <fillstroke/>
+        <ellipse x="90" y="105" w="15" h="15"/> <!-- Node 3 (Mid/Lower Front) -->
+        <fillstroke/>
+        <ellipse x="125" y="125" w="15" h="15"/> <!-- Node 4 (Lower Back) -->
+        <fillstroke/>
+
+        <!-- Connections (Lines) -->
+        <strokecolor color="#A9CCE3"/> <!-- Light Blue/Grey connections -->
+        <strokewidth width="2"/>
+        <path> <move x="92.5" y="62.5"/> <line x="127.5" y="82.5"/> </path> <stroke/> <!-- 1 to 2 -->
+        <path> <move x="92.5" y="62.5"/> <line x="97.5" y="112.5"/> </path> <stroke/> <!-- 1 to 3 -->
+        <path> <move x="127.5" y="82.5"/> <line x="97.5" y="112.5"/> </path> <stroke/> <!-- 2 to 3 -->
+        <path> <move x="127.5" y="82.5"/> <line x="132.5" y="132.5"/> </path> <stroke/> <!-- 2 to 4 -->
+        <path> <move x="97.5" y="112.5"/> <line x="132.5" y="132.5"/> </path> <stroke/> <!-- 3 to 4 -->
+
+        <restore/> <!-- Restore state after internal elements -->
+
+    </foreground>
+</shape>
+
+</shapes>

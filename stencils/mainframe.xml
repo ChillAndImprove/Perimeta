@@ -1,0 +1,49 @@
+<shapes name="mxgraph.servers"> <!-- Or mxgraph.compute, mxgraph.legacy -->
+
+<shape name="mainframe" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Mainframe Cabinet Symbol -->
+        <save/>
+        <!-- Main Body -->
+        <strokecolor color="#34495E"/> <!-- Darker Grey/Blue Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Grey/Blue Fill -->
+        <strokewidth width="3"/>
+        <!-- A tall, solid rectangle, wider than the standard server -->
+        <rect x="55" y="35" w="80" h="120"/>
+        <fillstroke/>
+
+        <!-- Subtle Side Panel for 3D Effect -->
+        <save/>
+        <fillcolor color="#34495E"/> <!-- Use the darker border color for side fill -->
+        <strokecolor color="none"/>
+        <rect x="135" y="35" w="10" h="120"/> <!-- Right side panel -->
+        <fill/>
+        <restore/>
+
+        <!-- Simple Detail Lines (Panels/Vents) -->
+        <strokecolor color="#ABB2B9"/> <!-- Lighter grey lines -->
+        <strokewidth width="1.5"/>
+        <!-- Vertical Panel Divider Lines -->
+        <path> <move x="82" y="35"/> <line x="82" y="155"/> </path> <stroke/> <!-- Approx 1/3 width -->
+        <path> <move x="108" y="35"/> <line x="108" y="155"/> </path> <stroke/> <!-- Approx 2/3 width -->
+        <!-- Horizontal Vent Lines (near bottom) -->
+        <path> <move x="55" y="140"/> <line x="135" y="140"/> </path> <stroke/>
+        <path> <move x="55" y="145"/> <line x="135" y="145"/> </path> <stroke/>
+        <path> <move x="55" y="150"/> <line x="135" y="150"/> </path> <stroke/>
+
+        <restore/> <!-- Restore state after drawing mainframe -->
+
+    </foreground>
+</shape>
+
+</shapes>

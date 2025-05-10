@@ -1586,30 +1586,40 @@ Graph.removePasteFormatting = function (elt) {
 };
 
 /**
- * Sanitizes the given HTML markup.
+ * Sanitizes the given HTML markup using DOMPurify.
  */
-Graph.sanitizeHtml = function (value, editing) {
-  // Uses https://code.google.com/p/google-caja/wiki/JsHtmlSanitizer
-  // NOTE: Original minimized sanitizer was modified to support
-  // data URIs for images, mailto and special data:-links.
-  // LATER: Add MathML to whitelisted tags
-  function urlX(link) {
-    if (
-      link != null &&
-      link.toString().toLowerCase().substring(0, 11) !== "javascript:"
-    ) {
-      return link;
-    }
-
-    return null;
-  }
-  function idX(id) {
-    return id;
+Graph.sanitizeHtml = function (value /*, editing */) { // 'editing' argument seems unused?
+  // Check if DOMPurify is available (loaded via app.js)
+  if (typeof DOMPurify === 'undefined' || typeof DOMPurify.sanitize !== 'function') {
+      console.error("DOMPurify is not available. Cannot sanitize HTML.");
+      // Return the original value or an empty string, depending on desired behavior
+      // Returning original value might be unsafe if DOMPurify failed to load.
+      // Consider throwing an error or returning a safe placeholder.
+      return value; // Or: return ''; or throw new Error('DOMPurify missing');
   }
 
-  return html_sanitize(value, urlX, idX);
+  // Basic Sanitization using DOMPurify
+  // DOMPurify handles URL sanitization internally by default.
+  // It prevents javascript: URLs and other malicious constructs.
+  const cleanHtml = DOMPurify.sanitize(value, {
+      // Configuration options (optional, defaults are generally secure)
+      // USE_PROFILES: { html: true }, // Standard HTML filtering (usually default)
+      // ADD_TAGS: ['my-custom-tag'], // Allow specific custom tags
+      // ADD_ATTR: ['my-custom-attr'], // Allow specific custom attributes
+      // ALLOW_DATA_ATTR: false, // Control data-* attributes (default is true)
+      // FORBID_TAGS: ['style'], // Explicitly forbid certain tags
+      // FORBID_ATTR: ['onerror'], // Explicitly forbid certain attributes
+      
+      // To mimic the old behavior of allowing 'mailto:' links (DOMPurify allows them by default):
+      // No special config needed for mailto.
+
+      // To allow data URIs for images (DOMPurify allows common image types by default):
+      // No special config usually needed for standard image data URIs (png, jpg, gif, webp).
+      // If you need *other* data URIs, you might need hooks, but start without.
+  });
+
+  return cleanHtml;
 };
-
 /**
  * Returns the CSS font family from the given computed style.
  */

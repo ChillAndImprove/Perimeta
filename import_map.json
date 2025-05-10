@@ -1,0 +1,16 @@
+{
+  "imports": {
+    "pako": "npm:pako",
+    "lodash": "npm:lodash-es",
+    "yaml": "npm:yaml",
+    "@yaireo/tagify": "npm:@yaireo/tagify@4.34.0",
+    "sweetalert2": "npm:sweetalert2@11",
+    "dompurify": "npm:dompurify",      
+    "raphael": "npm:raphael",          
+    "justgage": "npm:justgage",         
+    "@hpcc-js/wasm": "npm:@hpcc-js/wasm@^2", 
+    "@ts-graphviz/ast": "npm:@ts-graphviz/ast",
+    "@ts-graphviz": "npm:@ts-graphviz@^2.1.6",
+    "@viz-js/viz": "npm:@viz-js/viz@^3.12.0"
+  }
+}

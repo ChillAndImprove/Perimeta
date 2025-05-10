@@ -1,0 +1,44 @@
+{
+  "risks": {
+    "critical": {
+      "unchecked": 1,
+      "in-discussion": 0,
+      "accepted": 0,
+      "in-progress": 0,
+      "mitigated": 0,
+      "false-positive": 0
+    },
+    "high": {
+      "unchecked": 2,
+      "in-discussion": 0,
+      "accepted": 0,
+      "in-progress": 0,
+      "mitigated": 0,
+      "false-positive": 0
+    },
+    "elevated": {
+      "unchecked": 29,
+      "in-discussion": 0,
+      "accepted": 1,
+      "in-progress": 0,
+      "mitigated": 0,
+      "false-positive": 0
+    },
+    "medium": {
+      "unchecked": 45,
+      "in-discussion": 0,
+      "accepted": 0,
+      "in-progress": 0,
+      "mitigated": 0,
+      "false-positive": 0
+    },
+    "low": {
+      "unchecked": 9,
+      "in-discussion": 0,
+      "accepted": 0,
+      "in-progress": 0,
+      "mitigated": 0,
+      "false-positive": 0
+    }
+  }
+}

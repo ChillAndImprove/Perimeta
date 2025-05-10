@@ -1,0 +1,59 @@
+<shapes name="mxgraph.servers">
+
+<shape name="serverWebAppColorful" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Base Server Box - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="40" y="32" w="111" h="127"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Blue Code Brackets Symbol </> (Inside Server) - SCALED -->
+        <save/>
+        <strokecolor color="#3B82F6"/> <!-- Bright Blue -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- Centered within the scaled server box -->
+        <!-- < - SCALED -->
+        <path>
+            <move x="71" y="79"/>
+            <line x="60" y="95"/>
+            <line x="71" y="111"/>
+        </path>
+        <stroke/>
+        <!-- / - SCALED -->
+         <path>
+            <move x="90" y="79"/>
+            <line x="106" y="111"/>
+        </path>
+        <stroke/>
+        <!-- > - SCALED -->
+        <path>
+            <move x="114" y="79"/>
+            <line x="124" y="95"/>
+            <line x="114" y="111"/>
+        </path>
+        <stroke/>
+        <restore/> <!-- Restore state after drawing symbols -->
+
+    </foreground>
+</shape>
+
+</shapes>

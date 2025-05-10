@@ -1,0 +1,199 @@
+<!--[if IE]><meta http-equiv="X-UA-Compatible" content="IE=5,IE=9" ><![endif]-->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Triangle</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<!-- Project specific styles -->
+	<link rel="stylesheet" type="text/css" href="styles/grapheditor.css">
+    <!-- Replaced Tagify CDN CSS with local copy -->
+    <link rel="stylesheet" type="text/css" href="styles/vendor/tagify.css">
+	<link rel="stylesheet" type="text/css" href="styles/tagify.css">
+    <script type="module" src="dist/bundle.js" defer></script>
+
+	<script type="text/javascript">
+	    // Initial inline script (remains unchanged)
+	    window.addEventListener('load', function() {
+		var logo = document.getElementById('logo');
+	//	logo.classList.remove('image-fade-out-transition');
+	    });
+	</script>
+     <!-- === START AUTO-GENERATED IMPORT MAP === -->
+<!-- The content between these markers will be automatically replaced -->
+<!-- Run `deno task generate-map` to update -->
+<script type="importmap">
+{
+    "imports": {
+        "pako": "https://esm.sh/pako",
+        "lodash": "https://esm.sh/lodash-es",
+        "yaml": "https://esm.sh/yaml",
+        "@yaireo/tagify": "https://esm.sh/@yaireo/tagify@4.34.0",
+        "sweetalert2": "https://esm.sh/sweetalert2@11",
+        "dompurify": "https://esm.sh/dompurify",
+        "raphael": "https://esm.sh/raphael",
+        "justgage": "https://esm.sh/justgage",
+        "@hpcc-js/wasm": "https://esm.sh/@hpcc-js/wasm@^2",
+        "@ts-graphviz/parser": "https://esm.sh/@ts-graphviz/parser@^0.6"
+    }
+}
+</script>
+<!-- === END AUTO-GENERATED IMPORT MAP === -->
+
+	<!-- Inline styles (remain unchanged) -->
+	<style type="text/css">
+	</style>
+	<style type="text/css">
+	.pipeFlowAnimation {
+	  stroke-dasharray: 8;
+	  animation: pipeFlowKeyframes 0.5s linear;
+	  animation-iteration-count: infinite;
+	}
+	@keyframes pipeFlowKeyframes {
+	  to {
+	    stroke-dashoffset: -16;
+	  }
+	}
+	</style>
+	<style type="text/css">
+    .image-fade-out-transition {
+        opacity: 1;
+        transition: opacity 2s ease-out;
+    }
+    </style>
+    <script type="text/javascript">
+    // Logo fade out script (remains unchanged)
+    window.addEventListener('load', function() {
+        var logo = document.getElementById('logo_tiger');
+        setTimeout(function() {
+            logo.style.transition = 'opacity 2s ease-out';
+            logo.style.opacity = '0';
+
+            setTimeout(function() {
+                logo.style.display = 'none';
+            }, 2000);
+        }, 1000);
+    });
+    </script>
+    <style type="text/css">
+    #logo_tiger {
+        position: relative;
+        justify-content: center;
+        margin: 0 auto;
+        height: auto;
+        z-index: 999;
+        width: 600px;
+        display: flex;
+    }
+    </style>
+    <script type="module" src="./app.js" defer></script>
+
+
+	<script type="text/javascript">
+		// Parses URL parameters (remains unchanged)
+		var urlParams = (function(url)
+		{
+			var result = new Object();
+			var idx = url.lastIndexOf('?');
+
+			if (idx > 0)
+			{
+				var params = url.substring(idx + 1).split('&');
+
+				for (var i = 0; i < params.length; i++)
+				{
+					idx = params[i].indexOf('=');
+
+					if (idx > 0)
+					{
+						result[params[i].substring(0, idx)] = params[i].substring(idx + 1);
+					}
+				}
+			}
+
+			return result;
+		})(window.location.href);
+
+		mxLoadResources = false;
+        var RESOURCE_BASE = 'resources/grapheditor'; // Adjust if needed
+        var STYLE_PATH = 'styles'; // Adjust if needed
+        var IMAGE_PATH = 'images'; // Adjust if needed
+        var STENCIL_PATH = 'stencils'; // Adjust if needed
+	</script>
+
+    <!-- Core mxGraph and other remaining legacy scripts -->
+	<script type="text/javascript" src="js/Init.js"></script>
+	<script type="text/javascript" src="js/mxClient.js"></script>
+	<script type="text/javascript" src="js/EditorUi.js"></script>
+	<script type="text/javascript" src="js/Editor.js"></script>
+	<script type="text/javascript" src="js/Sidebar.js"></script>
+	<script type="text/javascript" src="js/Graph.js"></script>
+	<script type="module" src="js/Format.js"></script>
+	<script type="text/javascript" src="js/Shapes.js"></script>
+	<script type="text/javascript" src="js/Actions.js"></script>
+	<script type="text/javascript" src="js/Menus.js"></script>
+	<script type="text/javascript" src="js/Toolbar.js"></script>
+	<script type="text/javascript" src="js/Dialogs.js"></script>
+</head>
+<body class="geEditor">
+	<img src="images/logo.png" id="logo_tiger" class="image-fade-out-transition">
+
+	<script type="text/javascript">
+		window.addEventListener('load', function() {
+		    setTimeout(function() {
+				(function()
+				{
+					var editorUiInit = EditorUi.prototype.init;
+
+					EditorUi.prototype.init = function()
+					{
+						editorUiInit.apply(this, arguments);
+						this.actions.get('export').setEnabled(false);
+
+						if (!Editor.useLocalStorage)
+						{
+                            if (typeof OPEN_URL !== 'undefined') {
+                                mxUtils.post(OPEN_URL, '', mxUtils.bind(this, function(req)
+                                {
+                                    var enabled = req.getStatus() != 404;
+                                    this.actions.get('open').setEnabled(enabled || Graph.fileSupport);
+                                    this.actions.get('import').setEnabled(enabled || Graph.fileSupport);
+                                    this.actions.get('save').setEnabled(enabled);
+                                    this.actions.get('saveAs').setEnabled(enabled);
+                                    this.actions.get('export').setEnabled(enabled);
+                                }));
+                            } else {
+                                console.warn("OPEN_URL is not defined. File operations requiring a backend may be disabled.");
+                            }
+						}
+					};
+
+					mxResources.loadDefaultBundle = false;
+                    var mxLanguage = urlParams['lang'] || 'en'; // Default language if not in URL
+                    var bundle = mxResources.getDefaultBundle(RESOURCE_BASE, mxLanguage) ||
+						mxResources.getSpecialBundle(RESOURCE_BASE, mxLanguage);
+
+					mxUtils.getAll([bundle, STYLE_PATH + '/default.xml'], function(xhr)
+					{
+						mxResources.parse(xhr[0].getText());
+
+						var themes = new Object();
+						themes[Graph.prototype.defaultThemeName] = xhr[1].getDocumentElement();
+
+                        console.log("Initializing EditorUi...");
+						new EditorUi(new Editor(urlParams['chrome'] == '0', themes));
+                        console.log("EditorUi Initialized.");
+
+					}, function()
+					{
+						document.body.innerHTML = '<center style="margin-top:10%;">Error loading resource files. Please check browser console.</center>';
+					});
+				})();
+		    }, 50); // Reduced original timeout slightly, adjust if needed
+		});
+	</script>
+</body>
+</html>
+
+    

@@ -1,0 +1,67 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.network, mxgraph.servers -->
+
+<shape name="waf" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Web Application/Server Symbol (Behind the Wall) -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <strokewidth width="3"/>
+        <!-- Positioned slightly to the right/back -->
+        <rect x="70" y="35" w="80" h="120"/>
+        <fillstroke/>
+        <!-- Optional: Add </> symbol if needed, like serverWebAppColorful -->
+        <!-- <strokecolor color="#3B82F6"/> <strokewidth width="5"/> -->
+        <!-- <path> <move x="91" y="79"/> <line x="80" y="95"/> <line x="91" y="111"/> </path> <stroke/> -->
+        <!-- <path> <move x="110" y="79"/> <line x="126" y="111"/> </path> <stroke/> -->
+        <!-- <path> <move x="134" y="79"/> <line x="144" y="95"/> <line x="134" y="111"/> </path> <stroke/> -->
+        <restore/>
+
+        <!-- 3. Firewall Brick Wall Symbol (In Front) -->
+        <save/>
+        <!-- Main Wall Area -->
+        <strokecolor color="#A0522D"/> <!-- Sienna Border -->
+        <fillcolor color="#CD5C5C"/>   <!-- IndianRed Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned on the left, overlapping the server -->
+        <rect x="40" y="30" w="50" h="130"/>
+        <fillstroke/>
+
+        <!-- Mortar Lines (Bricks) -->
+        <strokecolor color="#F5F5F5"/> <!-- WhiteSmoke / Light Grey -->
+        <strokewidth width="1"/>
+        <!-- Horizontal Lines -->
+        <path> <move x="40" y="55"/> <line x="90" y="55"/> </path> <stroke/>
+        <path> <move x="40" y="80"/> <line x="90" y="80"/> </path> <stroke/>
+        <path> <move x="40" y="105"/> <line x="90" y="105"/> </path> <stroke/>
+        <path> <move x="40" y="130"/> <line x="90" y="130"/> </path> <stroke/>
+        <!-- Vertical Lines (Staggered) -->
+        <!-- Row 1 -->
+        <path> <move x="65" y="30"/> <line x="65" y="55"/> </path> <stroke/>
+        <!-- Row 2 -->
+        <path> <move x="52.5" y="55"/> <line x="52.5" y="80"/> </path> <stroke/>
+        <path> <move x="77.5" y="55"/> <line x="77.5" y="80"/> </path> <stroke/>
+        <!-- Row 3 -->
+        <path> <move x="65" y="80"/> <line x="65" y="105"/> </path> <stroke/>
+        <!-- Row 4 -->
+        <path> <move x="52.5" y="105"/> <line x="52.5" y="130"/> </path> <stroke/>
+        <path> <move x="77.5" y="105"/> <line x="77.5" y="130"/> </path> <stroke/>
+         <!-- Row 5 -->
+        <path> <move x="65" y="130"/> <line x="65" y="160"/> </path> <stroke/>
+
+        <restore/> <!-- Restore state after wall -->
+
+    </foreground>
+</shape>
+
+</shapes>

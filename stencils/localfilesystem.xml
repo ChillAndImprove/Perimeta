@@ -1,0 +1,65 @@
+<shapes name="mxgraph.computers"> <!-- Or mxgraph.storage, mxgraph.general -->
+
+<shape name="localFileSystem" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Simplified Computer Monitor Symbol (Behind) -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey -->
+        <fillcolor color="#ABB2B9"/>   <!-- Medium Grey -->
+        <strokewidth width="3"/>
+
+        <!-- Monitor Screen Bezel -->
+        <!-- Positioned slightly left-of-center -->
+        <roundrect x="30" y="45" w="90" h="70" arcsize="5"/>
+        <fillstroke/>
+
+        <!-- Inner Screen Area -->
+        <strokecolor color="#1C2833"/>
+        <fillcolor color="#EAECEE"/> <!-- Light Grey/White -->
+        <strokewidth width="2"/>
+        <rect x="35" y="50" w="80" h="60"/>
+        <fillstroke/>
+
+        <!-- Monitor Stand -->
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <strokewidth width="3"/>
+        <!-- Neck -->
+        <rect x="65" y="115" w="20" h="15"/>
+        <fillstroke/>
+        <!-- Base -->
+        <rect x="50" y="130" w="50" h="8"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Folder Icon (In Front) -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish Outline -->
+        <fillcolor color="#FAD7A0"/>   <!-- Light Orange/Tan Fill -->
+        <strokewidth width="3"/>
+
+        <!-- Main Folder Body -->
+        <!-- Positioned slightly right-of-center, overlapping monitor base -->
+        <roundrect x="90" y="90" w="80" h="60" arcsize="5"/>
+        <fillstroke/>
+
+        <!-- Folder Tab -->
+        <!-- Positioned top-left of the main body -->
+        <roundrect x="95" y="80" w="30" h="15" arcsize="3"/>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

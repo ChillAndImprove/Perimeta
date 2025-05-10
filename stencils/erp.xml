@@ -1,0 +1,81 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.business, mxgraph.general -->
+
+<shape name="erp" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Central Hub (Integration Core) -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- Centered circle -->
+        <ellipse x="70" y="70" w="50" h="50"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Module Blocks (Representing Business Functions) -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Border for Modules -->
+        <strokewidth width="2"/>
+
+        <!-- Define positions and size -->
+        <def name="modW" val="35"/>
+        <def name="modH" val="35"/>
+        <def name="modArc" val="4"/>
+        <def name="color1" val="#ABB2B9"/> <!-- Module Color 1 (Medium Grey) -->
+        <def name="color2" val="#BDC3C7"/> <!-- Module Color 2 (Light Grey) -->
+
+        <!-- Top Module -->
+        <fillcolor color="#var(color1)"/>
+        <roundrect x="77.5" y="20" w="35" h="35" arcsize="4"/> <fillstroke/>
+        <!-- Bottom Module -->
+        <fillcolor color="#var(color1)"/>
+        <roundrect x="77.5" y="135" w="35" h="35" arcsize="4"/> <fillstroke/>
+        <!-- Left Module -->
+        <fillcolor color="#var(color2)"/>
+        <roundrect x="20" y="77.5" w="35" h="35" arcsize="4"/> <fillstroke/>
+        <!-- Right Module -->
+        <fillcolor color="#var(color2)"/>
+        <roundrect x="135" y="77.5" w="35" h="35" arcsize="4"/> <fillstroke/>
+        <!-- Top-Left Module (Diagonal) -->
+        <fillcolor color="#var(color1)"/>
+        <roundrect x="35" y="35" w="35" h="35" arcsize="4"/> <fillstroke/>
+        <!-- Bottom-Right Module (Diagonal) -->
+        <fillcolor color="#var(color1)"/>
+        <roundrect x="120" y="120" w="35" h="35" arcsize="4"/> <fillstroke/>
+
+        <restore/> <!-- Restore state after modules -->
+
+        <!-- 4. Connection Lines (Hub to Modules) -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Match Hub Border Color -->
+        <strokewidth width="2"/>
+
+        <!-- Line to Top -->
+        <path> <move x="95" y="70"/> <line x="95" y="55"/> </path> <stroke/>
+        <!-- Line to Bottom -->
+        <path> <move x="95" y="120"/> <line x="95" y="135"/> </path> <stroke/>
+        <!-- Line to Left -->
+        <path> <move x="70" y="95"/> <line x="55" y="95"/> </path> <stroke/>
+        <!-- Line to Right -->
+        <path> <move x="120" y="95"/> <line x="135" y="95"/> </path> <stroke/>
+        <!-- Line to Top-Left -->
+        <path> <move x="81" y="81"/> <line x="70" y="70"/> </path> <stroke/> <!-- Adjusted start/end for diagonal -->
+        <!-- Line to Bottom-Right -->
+        <path> <move x="109" y="109"/> <line x="120" y="120"/> </path> <stroke/> <!-- Adjusted start/end for diagonal -->
+
+        <restore/> <!-- Restore state after lines -->
+
+    </foreground>
+</shape>
+
+</shapes>

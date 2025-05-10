@@ -1,0 +1,62 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.web, mxgraph.api -->
+
+<shape name="webServiceSoap" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Globe Symbol (Web Aspect) - Same as REST -->
+        <save/>
+        <strokecolor color="#2E86C1"/> <!-- Medium Blue Border -->
+        <fillcolor color="#5DADE2"/>   <!-- Lighter Blue Fill -->
+        <strokewidth width="3"/>
+        <!-- Main Globe Circle -->
+        <ellipse x="45" y="45" w="100" h="100"/>
+        <fillstroke/>
+        <!-- Simplified Latitude/Longitude Lines -->
+        <strokecolor color="#A9CCE3"/> <strokewidth width="1.5"/>
+        <path> <move x="95" y="45"/> <line x="95" y="145"/> </path> <stroke/>
+        <path> <move x="45" y="95"/> <line x="145" y="95"/> </path> <stroke/>
+        <path> <move x="65" y="55"/> <line x="125" y="135"/> </path> <stroke/>
+        <path> <move x="125" y="55"/> <line x="65" y="135"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Request/Response Arrows - Same positioning as REST -->
+        <!-- Request Arrow (Green) -->
+        <save/>
+        <strokecolor color="#27AE60"/> <fillcolor color="#27AE60"/> <strokewidth width="4"/>
+        <path> <move x="25" y="75"/> <line x="75" y="75"/> </path> <stroke/>
+        <path> <move x="65" y="65"/> <line x="80" y="75"/> <line x="65" y="85"/> <close/> </path> <fillstroke/>
+        <restore/>
+        <!-- Response Arrow (Orange) -->
+        <save/>
+        <strokecolor color="#E67E22"/> <fillcolor color="#E67E22"/> <strokewidth width="4"/>
+        <path> <move x="115" y="115"/> <line x="165" y="115"/> </path> <stroke/>
+        <path> <move x="155" y="105"/> <line x="170" y="115"/> <line x="155" y="125"/> <close/> </path> <fillstroke/>
+        <restore/>
+
+        <!-- 4. SOAP Envelope Symbol (Overlay) - Drawn Last! -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Outline -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill -->
+        <strokewidth width="2.5"/>
+        <!-- Centered horizontally and vertically -->
+        <!-- Main rectangle -->
+        <rect x="70" y="80" w="50" h="30"/>
+        <fillstroke/>
+        <!-- Flap lines -->
+        <path> <move x="70" y="80"/> <line x="95" y="95"/> <line x="120" y="80"/> </path>
+        <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

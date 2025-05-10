@@ -35,8 +35,10 @@ def browser_and_setup(request):
     driver.get("http://0.0.0.0:8000/indexTests.html")
     driver.set_window_size(1854, 1011)
     driver.switch_to.frame(0)
-    driver.find_element(By.CSS_SELECTOR, "td:nth-child(1) > .geBtn").click()
+    driver.find_element(By.ID, "customer_portal_erp_threat_model").click()
     driver.switch_to.default_content()
+    time.sleep(2)
+
 
     # ✅ Focus the node you're working on
     target_label = "Customer Web Client"

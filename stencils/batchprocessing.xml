@@ -1,0 +1,76 @@
+<shapes name="mxgraph.compute"> <!-- Or mxgraph.data, mxgraph.general -->
+
+<shape name="batchProcessing" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Input Data Batch (Group of Blocks) -->
+        <save/>
+        <strokecolor color="#2E86C1"/> <!-- Medium Blue Border -->
+        <fillcolor color="#5DADE2"/>   <!-- Lighter Blue Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned on the left -->
+        <rect x="30" y="75" w="25" h="25"/> <!-- Block 1 -->
+        <fillstroke/>
+        <rect x="35" y="105" w="25" h="25"/> <!-- Block 2 (Slightly offset) -->
+        <fillstroke/>
+        <rect x="60" y="90" w="25" h="25"/> <!-- Block 3 (Slightly offset) -->
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Processing Symbol (Gear) -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish-Orange Border -->
+        <fillcolor color="#F5B041"/>   <!-- Lighter Orange Fill -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned centrally -->
+        <ellipse x="75" y="75" w="40" h="40"/> <fillstroke/>
+        <ellipse x="87.5" y="87.5" w="15" h="15"> <fillcolor color="#D6EAF8"/> <strokecolor color="#AF601A"/> <strokewidth width="1"/> </ellipse> <fillstroke/>
+        <strokewidth width="3.5"/>
+        <path> <move x="95" y="75"/> <line x="95" y="69"/> </path> <stroke/> <path> <move x="115" y="95"/> <line x="121" y="95"/> </path> <stroke/>
+        <path> <move x="95" y="115"/> <line x="95" y="121"/> </path> <stroke/> <path> <move x="75" y="95"/> <line x="69" y="95"/> </path> <stroke/>
+        <path> <move x="109" y="81"/> <line x="113" y="77"/> </path> <stroke/> <path> <move x="109" y="109"/> <line x="113" y="113"/> </path> <stroke/>
+        <path> <move x="81" y="109"/> <line x="77" y="113"/> </path> <stroke/> <path> <move x="81" y="81"/> <line x="77" y="77"/> </path> <stroke/>
+        <restore/> <!-- Restore state after gear -->
+
+        <!-- 4. Output Data Batch (Transformed Blocks) -->
+        <save/>
+        <strokecolor color="#145A32"/> <!-- Dark Green Border -->
+        <fillcolor color="#A9DFBF"/>   <!-- Light Green Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned on the right -->
+        <rect x="135" y="75" w="25" h="25"/> <!-- Block 1 -->
+        <fillstroke/>
+        <rect x="130" y="105" w="25" h="25"/> <!-- Block 2 (Slightly offset) -->
+        <fillstroke/>
+        <!-- Optional: Could use different shapes for output -->
+        <restore/>
+
+        <!-- 5. Flow Arrow -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Grey -->
+        <fillcolor color="#34495E"/>
+        <strokewidth width="3"/>
+        <!-- Arrow from Input Batch Area towards Gear -->
+        <path> <move x="85" y="95"/> <line x="75" y="95"/> </path> <!-- Connects to left edge of gear space -->
+        <stroke/>
+        <!-- Arrow from Gear towards Output Batch Area -->
+        <path> <move x="115" y="95"/> <line x="130" y="95"/> </path> <!-- Connects from right edge of gear space -->
+        <stroke/>
+        <!-- Arrow Head for Output -->
+        <path> <move x="118" y="90"/> <line x="132" y="95"/> <line x="118" y="100"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,69 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.compute, mxgraph.cloud -->
+
+<shape name="monitoring" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Display Screen / Dashboard Frame -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark grey border -->
+        <fillcolor color="#2C3E50"/>   <!-- Dark blue/grey background -->
+        <strokewidth width="3"/>
+        <!-- Slightly inset rectangle -->
+        <rect x="25" y="40" w="140" h="90"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Stylized Line Graph (Heartbeat / Metric Trend) -->
+        <save/>
+        <strokecolor color="#58D68D"/> <!-- Light Green -->
+        <strokewidth width="4"/>       <!-- Make line prominent -->
+        <!-- Path representing a fluctuating metric -->
+        <path>
+            <move x="40" y="100"/> <!-- Start Left -->
+            <line x="60" y="100"/> <!-- Flat -->
+            <line x="70" y="75"/>  <!-- Spike Up -->
+            <line x="80" y="110"/> <!-- Dip Down -->
+            <line x="90" y="95"/>  <!-- Recover Mid -->
+            <line x="110" y="95"/> <!-- Flat -->
+            <line x="120" y="85"/> <!-- Small Up -->
+            <line x="130" y="105"/> <!-- Small Down -->
+            <line x="150" y="105"/> <!-- Flat End -->
+        </path>
+        <stroke/>
+        <restore/>
+
+        <!-- 4. Simple Gauge Indicator (Optional Detail) -->
+        <save/>
+        <!-- Semi-circle for gauge background -->
+        <strokecolor color="#ABB2B9"/>
+        <fillcolor color="#EAECEE"/>
+        <strokewidth width="1.5"/>
+        <!-- Positioned near bottom right -->
+        <path>
+            <move x="110" y="145"/> <!-- Bottom Left -->
+            <quad x1="135" y1="120" x="160" y="145"/> <!-- Arc Over Top -->
+        </path>
+        <fillstroke/>
+        <!-- Needle -->
+        <strokecolor color="#E74C3C"/> <!-- Red needle -->
+        <strokewidth width="2"/>
+        <path>
+            <move x="135" y="145"/> <!-- Pivot Point -->
+            <line x="120" y="130"/> <!-- Needle Point -->
+        </path>
+        <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

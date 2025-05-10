@@ -1,0 +1,78 @@
+<shapes name="mxgraph.computers">
+
+<shape name="clientNotebookShadow" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2a. Shadow for Laptop Base - SCALED -->
+        <save/>
+        <fillcolor color="#777777"/> <!-- Shadow color -->
+        <!-- SCALED x, y, w, h, arcsize (offset from scaled base position) -->
+        <!-- Base X was 16, Base Y was 95. Original offset was +2, +2 -->
+        <!-- Scaled offset approx +3, +3 -->
+        <!-- New Shadow X = 16 + 3 = 19 -->
+        <!-- New Shadow Y = 95 + 3 = 98 -->
+        <roundrect x="19" y="98" w="158" h="55" arcsize="8"/>
+        <fill/>
+        <restore/>
+
+        <!-- 2b. Laptop Base (Keyboard Area) - SCALED (Drawn ON TOP of shadow) -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="16" y="95" w="158" h="55" arcsize="8"/>
+        <fillstroke/>
+
+        <!-- Simple line suggesting touchpad area - SCALED -->
+        <strokecolor color="#424949"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- SCALED x, y, w, h -->
+        <!-- Original was centered horizontally (75 in 45-145 = 100 width), centered in base (120 in 95-130 = 35 height) -->
+        <!-- Scaled base is X 16, W 158 (Center X = 16 + 158/2 = 16 + 79 = 95) -->
+        <!-- Scaled base is Y 95, H 55 (Lower part Y = 95 + 55 - 8 = 142) -->
+        <!-- Scaled touchpad W 63, H 8 -->
+        <!-- Scaled touchpad X = Center X - W/2 = 95 - 63/2 = 95 - 31.5 = 63.5 -->
+        <!-- Scaled touchpad Y = Base bottom - H - small_margin = 95 + 55 - 8 - 2 = 140 -->
+        <!-- Re-calculating based on direct scaling: x=63, y=135, w=63, h=8 -->
+        <rect x="63.5" y="135" w="63" h="8"/> <!-- Adjusted X to be centered better -->
+        <stroke/>
+        <restore/>
+
+        <!-- 3. Laptop Screen (Lid Area) - SCALED (Drawn last to be on top) -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="16" y="16" w="158" h="95" arcsize="5"/>
+        <fillstroke/>
+
+        <!-- Inner Screen Area (Display) - SCALED -->
+        <strokecolor color="#1C2833"/>
+        <fillcolor color="#EAECEE"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="24" y="24" w="143" h="79"/>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

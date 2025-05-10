@@ -1,0 +1,62 @@
+<shapes name="mxgraph.cloud"> <!-- Or mxgraph.compute, mxgraph.orchestration -->
+
+<shape name="kubernetes" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Kubernetes Heptagon Logo -->
+        <save/>
+        <!-- Define Center and Radius -->
+        <def name="cx" val="95"/>
+        <def name="cy" val="95"/>
+        <def name="r" val="75"/> <!-- Radius for main vertices -->
+
+        <!-- Calculate Heptagon Vertices (Pointy top orientation) -->
+        <!-- P0(95,20), P1(37,48), P2(22,112), P3(62,163), P4(128,163), P5(169,112), P6(154,48) -->
+
+        <!-- Draw the Blue Heptagon Background -->
+        <strokecolor color="none"/> <!-- No border on the heptagon itself -->
+        <fillcolor color="#326CE5"/>   <!-- Kubernetes Blue -->
+        <path>
+            <move x="95" y="20"/>  <!-- P0 -->
+            <line x="37" y="48"/>  <!-- P1 -->
+            <line x="22" y="112"/> <!-- P2 -->
+            <line x="62" y="163"/> <!-- P3 -->
+            <line x="128" y="163"/> <!-- P4 -->
+            <line x="169" y="112"/> <!-- P5 -->
+            <line x="154" y="48"/> <!-- P6 -->
+            <close/>
+        </path>
+        <fill/>
+
+        <!-- Draw the White Spokes/Lines -->
+        <strokecolor color="#FFFFFF"/> <!-- White lines -->
+        <strokewidth width="10"/>      <!-- Make lines thick -->
+        <linecap cap="round"/>      <!-- Optional: Rounded ends -->
+
+        <!-- Calculate Midpoints of Edges -->
+        <!-- M01(66,34), M12(30,80), M23(42,138), M34(95,163), M45(149,138), M56(162,80), M60(125,34) -->
+
+        <!-- Lines from Center to Midpoints -->
+        <path> <move x="95" y="95"/> <line x="66" y="34"/> </path> <stroke/> <!-- Center to M01 -->
+        <path> <move x="95" y="95"/> <line x="30" y="80"/> </path> <stroke/> <!-- Center to M12 -->
+        <path> <move x="95" y="95"/> <line x="42" y="138"/> </path> <stroke/> <!-- Center to M23 -->
+        <path> <move x="95" y="95"/> <line x="95" y="163"/> </path> <stroke/> <!-- Center to M34 -->
+        <path> <move x="95" y="95"/> <line x="149" y="138"/> </path> <stroke/> <!-- Center to M45 -->
+        <path> <move x="95" y="95"/> <line x="162" y="80"/> </path> <stroke/> <!-- Center to M56 -->
+        <path> <move x="95" y="95"/> <line x="125" y="34"/> </path> <stroke/> <!-- Center to M60 -->
+
+        <restore/> <!-- Restore state after drawing logo -->
+
+    </foreground>
+</shape>
+
+</shapes>

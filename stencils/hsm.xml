@@ -1,0 +1,46 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.servers, mxgraph.hardware -->
+
+<shape name="hsm" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. HSM Hardware Representation (Robust Box) -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="3"/>       <!-- Solid border -->
+        <!-- Centered, slightly shorter/wider than standard server -->
+        <rect x="40" y="60" w="110" h="70"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Security Symbol (Shield) - On Top -->
+        <save/>
+        <strokecolor color="#000000"/> <!-- Black Outline for contrast -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill for prominence -->
+        <strokewidth width="2.5"/>
+        <!-- Centered on the hardware box -->
+        <!-- Shield Dimensions: Width=50, Height=60, Center=(95, 95) -->
+        <path>
+            <move x="70" y="65"/>      <!-- Top-Left -->
+            <line x="70" y="105"/>     <!-- Straight Down Left -->
+            <line x="95" y="125"/>     <!-- Point Bottom Center -->
+            <line x="120" y="105"/>    <!-- Straight Up Right -->
+            <line x="120" y="65"/>     <!-- Top-Right -->
+            <close/>
+        </path>
+        <fillstroke/>
+        <restore/> <!-- Restore state after shield -->
+
+    </foreground>
+</shape>
+
+</shapes>

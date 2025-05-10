@@ -1,0 +1,57 @@
+<shapes name="mxgraph.storage"> <!-- Or mxgraph.services, mxgraph.general -->
+
+<shape name="searchIndex" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Indexed Data Structure Symbol (Behind) -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Border -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned slightly lower-right -->
+        <!-- Main rectangle representing the index table/list -->
+        <rect x="70" y="70" w="80" h="80"/>
+        <fillstroke/>
+        <!-- Internal lines representing index entries/rows -->
+        <strokecolor color="#BDC3C7"/> <!-- Light Grey Lines -->
+        <strokewidth width="1.5"/>
+        <path> <move x="70" y="85"/> <line x="150" y="85"/> </path> <stroke/>
+        <path> <move x="70" y="100"/> <line x="150" y="100"/> </path> <stroke/>
+        <path> <move x="70" y="115"/> <line x="150" y="115"/> </path> <stroke/>
+        <path> <move x="70" y="130"/> <line x="150" y="130"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Magnifying Glass Symbol (Searching the Index) - In Front -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Strong Blue -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>
+        <!-- Lens Circle - Positioned upper-left, overlapping the index structure -->
+        <ellipse x="40" y="40" w="90" h="90"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/>
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <!-- Dark Blue/Grey handle -->
+        <strokecolor color="#2C3E50"/>
+        <strokewidth width="2"/>
+        <save/>
+        <rotate angle="45" x="111" y="111"/> <!-- Rotate around bottom-right connection -->
+        <roundrect x="105" y="105" w="45" h="15" arcsize="4"/>
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+        <restore/> <!-- Restore state after magnifying glass -->
+
+    </foreground>
+</shape>
+
+</shapes>

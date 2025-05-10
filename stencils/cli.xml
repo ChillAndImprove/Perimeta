@@ -1,0 +1,58 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.compute, mxgraph.tools -->
+
+<shape name="cli" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Terminal Window Frame -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark grey border -->
+        <fillcolor color="#2C3E50"/>   <!-- Dark blue/grey terminal background -->
+        <strokewidth width="3"/>
+        <!-- Slightly inset rounded rectangle -->
+        <roundrect x="25" y="25" w="140" h="140" arcsize="8"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. CLI Prompt Symbol (>_) -->
+        <save/>
+        <strokecolor color="#AFFFBF"/> <!-- Light Mint Green / Terminal Text Color -->
+        <strokewidth width="5"/>       <!-- Bold prompt -->
+
+        <!-- Position near top-left of the dark area -->
+        <!-- '>' Symbol -->
+        <path>
+            <move x="40" y="45"/>
+            <line x="60" y="60"/>
+            <line x="40" y="75"/>
+        </path>
+        <stroke/>
+
+        <!-- '_' Cursor Symbol -->
+        <path>
+            <move x="65" y="75"/>
+            <line x="85" y="75"/>
+        </path>
+        <stroke/>
+        <restore/> <!-- Restore state after prompt -->
+
+        <!-- Optional: Add faint lines representing previous commands -->
+        <save/>
+        <strokecolor color="#7F8C8D"/> <!-- Dim Grey -->
+        <strokewidth width="2"/>
+        <path> <move x="40" y="95"/> <line x="140" y="95"/> </path> <stroke/>
+        <path> <move x="40" y="110"/> <line x="120" y="110"/> </path> <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

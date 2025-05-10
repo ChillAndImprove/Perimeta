@@ -1,0 +1,22 @@
+{
+  "tasks": {
+        "dev": "deno run --allow-read --allow-net --watch dev_server.ts",
+        "build": "deno run --allow-read --allow-write --allow-net --allow-env --allow-run build.ts",
+        "serve:prod": "echo 'Serving production build from current directory...' && python3 -m http.server",
+         "generate-map": "deno run --allow-read generate_dev_map.ts"
+
+  }, 
+  "imports": {
+    "@viz-js/viz": "npm:@viz-js/viz@^3.12.0",
+    "pako": "npm:pako",
+    "lodash": "npm:lodash-es",
+    "yaml": "npm:yaml",
+    "@yaireo/tagify": "npm:@yaireo/tagify@4.34.0",
+    "sweetalert2": "npm:sweetalert2@11", 
+    "dompurify": "npm:dompurify",
+    "raphael": "npm:raphael",
+    "justgage": "npm:justgage",
+    "@ts-graphviz/ast": "npm:@ts-graphviz/ast",
+    "@ts-graphviz": "npm:@ts-graphviz@2.1.6"
+  }
+}

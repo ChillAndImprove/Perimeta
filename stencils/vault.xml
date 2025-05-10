@@ -1,0 +1,59 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.storage, mxgraph.general -->
+
+<shape name="vault" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Vault Outer Frame -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="4"/>
+        <!-- Thick frame, slightly inset -->
+        <roundrect x="25" y="25" w="140" h="140" arcsize="8"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Vault Door (Circular) -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Border -->
+        <fillcolor color="#ABB2B9"/>   <!-- Lighter Grey Door Fill -->
+        <strokewidth width="6"/>       <!-- Thick door -->
+        <!-- Large circle centered within the frame -->
+        <ellipse x="40" y="40" w="110" h="110"/>
+        <fillstroke/>
+
+        <!-- 4. Locking Mechanism Details -->
+        <!-- Central Hub/Wheel -->
+        <strokecolor color="#34495E"/>
+        <fillcolor color="#5D6D7E"/> <!-- Match Frame Fill -->
+        <strokewidth width="2"/>
+        <ellipse x="80" y="80" w="30" h="30"/>
+        <fillstroke/>
+
+        <!-- Simple Keyhole Symbol -->
+        <strokecolor color="#2C3E50"/> <!-- Very Dark Grey/Black -->
+        <fillcolor color="#2C3E50"/>
+        <strokewidth width="1"/>
+        <!-- Positioned slightly above the central hub -->
+        <!-- Circle part -->
+        <ellipse x="88" y="65" w="14" h="14"/>
+        <fillstroke/>
+        <!-- Rectangular part -->
+        <rect x="93" y="78" w="4" h="10"/>
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after door details -->
+
+    </foreground>
+</shape>
+
+</shapes>

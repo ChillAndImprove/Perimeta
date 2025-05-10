@@ -1,0 +1,67 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.cloud, mxgraph.general -->
+
+<shape name="identityProvider" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Container - Large Blue - SCALED -->
+        <save/>
+        <strokecolor color="#003366"/>
+        <fillcolor color="#0050B0"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Stylized Person Icon - SCALED -->
+        <save/>
+        <strokecolor color="#000000"/>
+        <fillcolor color="#FFFFFF"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2.5"/>
+        <!-- Head - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="36" y="55" w="40" h="40"/>
+        <fillstroke/>
+        <!-- Body - SCALED -->
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="25" y="98" w="60" h="52" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Key Icon - SCALED -->
+        <save/>
+        <strokecolor color="#000000"/>
+        <fillcolor color="#FFD700"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2.5"/>
+
+        <!-- Key Head (Circle) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="138" y="82" w="25" h="25"/>
+        <fillstroke/>
+        <!-- Cutout - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="144" y="89" w="13" h="13">
+            <fillcolor color="#0050B0"/> <!-- Use scaled background color -->
+            <strokecolor color="none"/>
+        </ellipse>
+        <fill/>
+
+        <!-- Key Stem (Horizontal) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <rect x="103" y="92" w="35" h="6"/>
+        <fillstroke/>
+
+        <!-- Key Teeth (Vertical) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <rect x="127" y="98" w="5" h="8"/> <!-- Tooth 1 -->
+        <fillstroke/>
+        <rect x="114" y="98" w="5" h="8"/> <!-- Tooth 2 -->
+        <fillstroke/>
+        <restore/>
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,55 @@
+<shapes name="mxgraph.compute"> <!-- Or mxgraph.cloud, mxgraph.virtualization -->
+
+<shape name="containerPlatform" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Platform Base Symbol -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- A solid base positioned lower-center -->
+        <roundrect x="35" y="140" w="120" h="20" arcsize="5"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Container Symbols (on the Platform) -->
+        <save/>
+        <strokecolor color="#2E86C1"/> <!-- Medium Blue Border -->
+        <fillcolor color="#3498DB"/>   <!-- Lighter Blue Fill -->
+        <strokewidth width="2"/>
+
+        <!-- Container Grid (2x2 example) -->
+        <!-- Positioned above the platform base -->
+        <def name="cSize" val="45"/> <!-- Container width/height -->
+        <def name="cGap" val="10"/>  <!-- Gap between containers -->
+        <def name="cBaseX" val="45"/> <!-- X position of first column -->
+        <def name="cBaseY" val="45"/> <!-- Y position of top row -->
+
+        <!-- Top Row -->
+        <rect x="45" y="45" w="45" h="45"/> <!-- Top Left -->
+        <fillstroke/>
+        <rect x="100" y="45" w="45" h="45"/> <!-- Top Right -->
+        <fillstroke/>
+
+        <!-- Bottom Row -->
+        <rect x="45" y="100" w="45" h="45"/> <!-- Bottom Left -->
+        <fillstroke/>
+        <rect x="100" y="100" w="45" h="45"/> <!-- Bottom Right -->
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after containers -->
+
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,62 @@
+     <shapes name="mxgraph.servers">
+
+<shape name="serverCodeInspection" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Document Icon (Represents Code File) -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Blue/Grey -->
+        <fillcolor color="#FFFFFF"/>   <!-- White paper -->
+        <strokewidth width="3"/>
+        <!-- Main rectangle for the document, centered -->
+        <rect x="40" y="30" w="110" h="130"/>
+        <fillstroke/>
+
+        <!-- Simple lines suggesting text/code -->
+        <strokecolor color="#BDC3C7"/> <!-- Light grey lines -->
+        <strokewidth width="2"/>
+        <path> <move x="55" y="50"/> <line x="135" y="50"/> </path> <stroke/>
+        <path> <move x="55" y="65"/> <line x="135" y="65"/> </path> <stroke/>
+        <path> <move x="55" y="80"/> <line x="100" y="80"/> </path> <stroke/>
+        <path> <move x="55" y="95"/> <line x="120" y="95"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Magnifying Glass Symbol - Examining the document -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Stronger Blue for emphasis -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>    <!-- Make it stand out -->
+
+        <!-- Lens Circle (Frame) - Positioned overlapping bottom-right -->
+        <ellipse x="78" y="115" w="60" h="60"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/> <!-- Reset alpha for handle -->
+
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <!-- Dark Blue/Grey handle -->
+        <strokecolor color="#2C3E50"/> <!-- Slightly darker outline -->
+        <strokewidth width="2"/>
+        <save/>
+         <!-- Rotate around center of connection point (approx bottom-right of lens) -->
+        <rotate angle="45" x="143" y="143"/>
+        <!-- Position handle relative to rotation point -->
+        <roundrect x="138" y="138" w="45" h="15" arcsize="4"/>
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+
+        <restore/> <!-- Restore state after drawing magnifying glass -->
+
+    </foreground>
+</shape>
+
+</shapes>

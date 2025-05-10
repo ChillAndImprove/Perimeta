@@ -96,19 +96,194 @@ Sidebar.prototype.init = function () {
   this.addSearchPalette(true);
   */
   this.addGeneralPalette(true);
+
+  // Define the structure for stencil groups
+  var baseStyle = ';whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2';
+  // Specific style for icons needing centered text below
+  var iconStyle = ';verticalLabelPosition=bottom;verticalAlign=top;align=center;fontStyle=1;fontSize=18;';
   //this.addMiscPalette(false);
   //this.addAdvancedPalette(false);
   //this.addBasicPalette(dir);
 
-  //this.setCurrentSearchEntryLibrary("arrows");
-  /*
-  this.addStencilPalette(
-    "arrows",
-    mxResources.get("arrows"),
-    dir + "/arrows.xml",
-    ";whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#000000;strokeWidth=2"
-  );
-  */
+ var stencilGroups = [
+    {
+      id: 'identity_security',
+      title: 'Identity & Security',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/identityprovider.xml', title: 'Identity Provider' },
+        { file: 'stencils/idsldap.xml', title: 'Identity Store LDAP', style: iconStyle },
+        { file: 'stencils/idsdb.xml', title: 'Identity Store Database', style: iconStyle },
+        { file: 'stencils/vault.xml', title: 'Vault', style: iconStyle },
+        { file: 'stencils/hsm.xml', title: 'HSM', style: iconStyle },
+        { file: 'stencils/waf.xml', title: 'Web Application Firewall', style: iconStyle },
+        { file: 'stencils/ids.xml', title: 'Intrusion Detection System', style: iconStyle },
+        { file: 'stencils/ips.xml', title: 'Intrusion Prevention System', style: iconStyle }
+      ]
+    },
+    {
+      id: 'web',
+      title: 'Web Related',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/loadbalancer.xml', title: 'Loadbalancer' },
+        { file: 'stencils/reverseproxy.xml', title: 'Reverse Proxy' },
+        { file: 'stencils/webapp.xml', title: 'Web Application' },
+        { file: 'stencils/webserver.xml', title: 'Web Server' }
+      ]
+    },
+    {
+      id: 'client',
+      title: 'Client Systems',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/browser.xml', title: 'Browser' },
+        { file: 'stencils/devops.xml', title: 'DevOps Client', style: iconStyle },
+        { file: 'stencils/mobile.xml', title: 'Mobile App', style: iconStyle },
+        { file: 'stencils/desktop.xml', title: 'Desktop Client', style: iconStyle },
+        { file: 'stencils/clientsystem.xml', title: 'Generic Client System', style: iconStyle }
+      ]
+    },
+    {
+      id: 'development',
+      title: 'Development Related',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/codeinspection.xml', title: 'Code Inspection Platform' },
+        { file: 'stencils/git.xml', title: 'Sourcecode Repository', style: iconStyle },
+        { file: 'stencils/buildpipeline.xml', title: 'Build Pipeline', style: iconStyle },
+        { file: 'stencils/artifactregistry.xml', title: 'Artifact Registry', style: iconStyle }
+      ]
+    },
+    {
+      id: 'infrastructure',
+      title: 'Infrastructure & Services',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/localfilesystem.xml', title: 'Local File System', style: iconStyle },
+        { file: 'stencils/database.xml', title: 'Database', style: iconStyle },
+        { file: 'stencils/ldapserver.xml', title: 'LDAP Server', style: iconStyle },
+        { file: 'stencils/containerplatform.xml', title: 'Container Platform', style: iconStyle },
+        { file: 'stencils/mainframe.xml', title: 'Mainframe', style: iconStyle },
+        { file: 'stencils/blockstorage.xml', title: 'Block Storage', style: iconStyle },
+        { file: 'stencils/webservicerest.xml', title: 'WebService REST', style: iconStyle },
+        { file: 'stencils/webservicesoap.xml', title: 'WebService SOAP', style: iconStyle }
+      ]
+    },
+    {
+        id: 'messaging_processing',
+        title: 'Messaging & Processing',
+        expanded: false,
+        stencils: [
+            { file: 'stencils/mqueue.xml', title: 'Message Queue', style: iconStyle },
+            { file: 'stencils/streamprocessing.xml', title: 'Stream Processing', style: iconStyle },
+            { file: 'stencils/batchprocessing.xml', title: 'Batch Processing', style: iconStyle },
+            { file: 'stencils/eventlistener.xml', title: 'Event Listener', style: iconStyle }
+       ]
+    },
+    {
+        id: 'network',
+        title: 'Network Components',
+        expanded: false,
+        stencils: [
+            { file: 'stencils/gateway.xml', title: 'Gateway', style: iconStyle },
+            { file: 'stencils/servicemesh.xml', title: 'Service Mesh', style: iconStyle }
+       ]
+    },
+    {
+        id: 'data_analytics',
+        title: 'Data, Reporting & Analytics',
+        expanded: false,
+        stencils: [
+            { file: 'stencils/datalake.xml', title: 'Data Lake', style: iconStyle },
+            { file: 'stencils/reportengine.xml', title: 'Report Engine', style: iconStyle },
+            { file: 'stencils/ai.xml', title: 'AI / ML Service', style: iconStyle },
+            { file: 'stencils/searchengine.xml', title: 'Search Engine', style: iconStyle },
+            { file: 'stencils/searchindex.xml', title: 'Search Index', style: iconStyle }
+       ]
+    },
+    {
+        id: 'management_tools',
+        title: 'Management, Tools & Utilities',
+        expanded: false,
+        stencils: [
+            { file: 'stencils/cms.xml', title: 'Content Management System', style: iconStyle },
+            { file: 'stencils/erp.xml', title: 'ERP System', style: iconStyle },
+            { file: 'stencils/tool.xml', title: 'Generic Tool', style: iconStyle },
+            { file: 'stencils/cli.xml', title: 'Command Line Interface (CLI)', style: iconStyle },
+            { file: 'stencils/monitoring.xml', title: 'Monitoring System', style: iconStyle },
+            { file: 'stencils/scheduler.xml', title: 'Scheduler', style: iconStyle }
+       ]
+    },
+    {
+      id: 'other',
+      title: 'Other',
+      expanded: false,
+      stencils: [
+        { file: 'stencils/unknown.xml', title: 'Unknown Technology' },
+        { file: 'stencils/applicationserver.xml', title: 'Application Server', style: iconStyle },
+        { file: 'stencils/ejb.xml', title: 'EJB Container', style: iconStyle },
+        { file: 'stencils/serviceregistry.xml', title: 'Service Registry', style: iconStyle },
+        { file: 'stencils/task.xml', title: 'Generic Task', style: iconStyle },
+        { file: 'stencils/function.xml', title: 'Function / Lambda', style: iconStyle },
+        { file: 'stencils/iotdevice.xml', title: 'IoT Device', style: iconStyle },
+        { file: 'stencils/mailserver.xml', title: 'Mail Server', style: iconStyle },
+        { file: 'stencils/library.xml', title: 'Library', style: iconStyle }
+      ]
+    }
+  ];
+
+  // Loop through the defined groups and add palettes
+  stencilGroups.forEach(function(group) {
+      // Use addPalette to create the group title and container
+      this.addPalette(group.id, group.title, group.expanded, mxUtils.bind(this, function(content) {
+          // This function is called when the palette is expanded (or immediately if expanded is true)
+
+          // Load the stencils defined for this group
+          group.stencils.forEach(function(stencil) {
+              var currentStyle = baseStyle + (stencil.style || ''); // Combine base style with specific style if provided
+
+              // Load the stencil file
+              // Assuming each file contains one stencil based on your original structure
+              mxStencilRegistry.loadStencilSet(stencil.file, mxUtils.bind(this, function(packageName, stencilName, displayName, w, h) {
+                  // Create the thumbnail item for the stencil
+                  var elt = this.createVertexTemplate(
+                      'shape=' + packageName + stencilName.toLowerCase() + currentStyle,
+                      Math.round(w * 1), // Use scale=1 or adjust as needed
+                      Math.round(h * 1),
+                      '', // Default value in the shape
+                      stencil.title, // Use the title defined in our config
+                      true, // showLabel (usually true for sidebar thumb)
+                      this.sidebarTitles // showTitle depends on the global setting
+                      // Add true as the last argument if these items should be added to the search index
+                      // , true // allowCellsInserted / add to index
+                  );
+                  content.appendChild(elt);
+
+                  // Optional: Add to search index if search palette is ever re-enabled
+                  // var tags = this.getTagsForStencil(packageName, stencilName, stencil.title.toLowerCase());
+                  // this.addEntry(this.filterTags(tags.join(' ')), function() { return elt; }); // Might need adjustment if elt creation is async
+
+              }), true, true); // Load synchronously and add to index (if needed by search)
+
+          }, this); // End of loop through stencils in the group
+      })); // End of addPalette call
+  }, this); // End of loop through groups 
+    /*
+   this.createVertexTemplateEntry(
+            'shape=image;html=1;image=images/logos/Kubernetes_logo_without_workmark.svg;verticalLabelPosition=bottom;verticalAlign=top;', // ** ADJUST PATH **
+            60,                             // Desired width on the diagram initially
+            60,                             // Desired height on the diagram initially
+            '',                             // Default value/label inside the shape (usually empty for images)
+            'Kubernetes Logo',              // Title for tooltip and potentially label
+            true,                           // showLabel (typically true for tooltips)
+            false,                          // showTitle below thumbnail in sidebar (optional, false is cleaner for single icons)
+            'kubernetes k8s logo icon brand cluster container orchestration' // Search tags
+        ),
+        
+	this.addPaletteFunctions('general', mxResources.get('general'),true, fns);
+	this.setCurrentSearchEntryLibrary();
+    */
   this.setCurrentSearchEntryLibrary();
 
   //this.addUmlPalette(false);

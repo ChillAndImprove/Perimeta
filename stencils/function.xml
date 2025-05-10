@@ -1,0 +1,57 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.compute, mxgraph.flowchart -->
+
+<shape name="function" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Predefined Process Symbol (Function Body) -->
+        <save/>
+        <!-- Main Rectangle -->
+        <strokecolor color="#512E5F"/> <!-- Dark Purple Border -->
+        <fillcolor color="#A569BD"/>   <!-- Medium Purple Fill -->
+        <strokewidth width="3"/>
+        <!-- Centered rectangle -->
+        <rect x="45" y="65" w="100" h="60"/>
+        <fillstroke/>
+
+        <!-- Inner Vertical Lines -->
+        <strokecolor color="#512E5F"/> <!-- Same as border -->
+        <strokewidth width="2"/>       <!-- Slightly thinner -->
+        <!-- Inset from the sides -->
+        <path> <move x="55" y="65"/> <line x="55" y="125"/> </path> <stroke/> <!-- Left Line -->
+        <path> <move x="135" y="65"/> <line x="135" y="125"/> </path> <stroke/> <!-- Right Line -->
+        <restore/>
+
+        <!-- 3. Input/Output Arrows -->
+        <!-- Input Arrow (Green) -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green -->
+        <fillcolor color="#27AE60"/>
+        <strokewidth width="4"/>
+        <!-- Arrow pointing to the left side -->
+        <path> <move x="15" y="95"/> <line x="45" y="95"/> </path> <stroke/> <!-- Shaft -->
+        <path> <move x="33" y="88"/> <line x="47" y="95"/> <line x="33" y="102"/> <close/> </path> <fillstroke/> <!-- Head -->
+        <restore/>
+
+        <!-- Output Arrow (Orange) -->
+        <save/>
+        <strokecolor color="#E67E22"/> <!-- Orange -->
+        <fillcolor color="#E67E22"/>
+        <strokewidth width="4"/>
+        <!-- Arrow pointing away from the right side -->
+        <path> <move x="145" y="95"/> <line x="175" y="95"/> </path> <stroke/> <!-- Shaft -->
+        <path> <move x="163" y="88"/> <line x="177" y="95"/> <line x="163" y="102"/> <close/> </path> <fillstroke/> <!-- Head -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

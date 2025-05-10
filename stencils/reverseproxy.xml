@@ -1,0 +1,58 @@
+<shapes name="mxgraph.servers">
+
+<shape name="serverReverseProxyColorful" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Base Server Box - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="40" y="32" w="111" h="127"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Bigger, Colorful Redirect Arrows - SCALED -->
+        <!-- Incoming Arrow (Green) - SCALED -->
+        <save/>
+        <strokecolor color="#34D399"/> <!-- Bright Emerald Green -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- Shaft - SCALED -->
+        <path> <move x="5" y="95"/> <line x="87" y="95"/> </path>
+        <stroke/>
+        <!-- Head - SCALED -->
+        <path> <move x="71" y="84"/> <line x="87" y="95"/> <line x="71" y="106"/> </path>
+        <stroke/>
+        <restore/>
+
+        <!-- Outgoing Arrow (Orange) - SCALED -->
+        <save/>
+        <strokecolor color="#F97316"/> <!-- Bright Orange -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- Shaft - SCALED -->
+        <path> <move x="103" y="95"/> <line x="185" y="95"/> </path>
+        <stroke/>
+        <!-- Head - SCALED -->
+        <path> <move x="169" y="84"/> <line x="185" y="95"/> <line x="169" y="106"/> </path>
+        <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

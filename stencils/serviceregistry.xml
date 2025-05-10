@@ -1,0 +1,66 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.network, mxgraph.integration -->
+
+<shape name="serviceRegistry" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Registry Book/Ledger Symbol (Behind) -->
+        <save/>
+        <!-- Pages Area -->
+        <strokecolor color="#424949"/> <!-- Dark Grey Border -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned slightly lower-right -->
+        <rect x="60" y="45" w="90" h="100"/>
+        <fillstroke/>
+
+        <!-- Spine/Binding -->
+        <strokecolor color="none"/>
+        <fillcolor color="#5D6D7E"/> <!-- Medium Slate Grey Spine -->
+        <rect x="50" y="45" w="10" h="100"/>
+        <fill/>
+
+        <!-- Lines representing entries -->
+        <strokecolor color="#BDC3C7"/> <!-- Light Grey Lines -->
+        <strokewidth width="1.5"/>
+        <path> <move x="70" y="60"/> <line x="140" y="60"/> </path> <stroke/>
+        <path> <move x="70" y="75"/> <line x="140" y="75"/> </path> <stroke/>
+        <path> <move x="70" y="90"/> <line x="140" y="90"/> </path> <stroke/>
+        <path> <move x="70" y="105"/> <line x="140" y="105"/> </path> <stroke/>
+        <path> <move x="70" y="120"/> <line x="140" y="120"/> </path> <stroke/>
+        <path> <move x="70" y="135"/> <line x="140" y="135"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Magnifying Glass Symbol (Discovery Aspect) - In Front -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Strong Blue -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>
+        <!-- Lens Circle - Positioned upper-left, overlapping the book -->
+        <ellipse x="35" y="35" w="80" h="80"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/>
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <!-- Dark Blue/Grey handle -->
+        <strokecolor color="#2C3E50"/>
+        <strokewidth width="2"/>
+        <save/>
+        <rotate angle="45" x="101" y="101"/> <!-- Rotate around bottom-right connection -->
+        <roundrect x="95" y="95" w="45" h="15" arcsize="4"/>
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+        <restore/> <!-- Restore state after magnifying glass -->
+
+    </foreground>
+</shape>
+
+</shapes>

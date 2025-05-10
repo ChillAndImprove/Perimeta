@@ -1,0 +1,53 @@
+<shapes name="mxgraph.computers">
+
+<shape name="clientMobileApp" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Smartphone Body - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="47.5" y="16" w="95" h="158" arcsize="24"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Smartphone Screen Area - SCALED -->
+        <save/>
+        <strokecolor color="#1C2833"/>
+        <fillcolor color="#EAECEE"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="55" y="24" w="79" h="143"/>
+        <fillstroke/>
+
+        <!-- Optional: Subtle detail like front camera/sensor spot - SCALED -->
+        <fillcolor color="#1C2833"/>
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="90" y="27" w="10" h="10"/>
+        <fill/>
+
+        <!-- Optional: Subtle detail like home indicator bar - SCALED (if uncommented) -->
+        <!-- <fillcolor color="#7F8C8D"/> -->
+        <!-- <rect x="71" y="158" w="48" h="5"/> --> <!-- Scaled x,y,w,h -->
+        <!-- <fill/> -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

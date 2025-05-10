@@ -1,0 +1,49 @@
+<shapes name="mxgraph.network"> <!-- Or mxgraph.general, mxgraph.integration -->
+
+<shape name="gateway" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Gateway Arch Symbol -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="4"/>       <!-- Solid, thick arch -->
+        <!-- Centered Archway -->
+        <!-- Path: Bottom-Left -> Top-Left -> Curve Over Top -> Top-Right -> Bottom-Right -->
+        <path>
+            <move x="45" y="150"/> <!-- Bottom Left Pillar -->
+            <line x="45" y="60"/>  <!-- Up Left Pillar -->
+            <quad x1="95" y1="20" x="145" y="60"/> <!-- Curved Top (Control point above center) -->
+            <line x="145" y="150"/> <!-- Down Right Pillar -->
+            <!-- Note: No close, we just fill/stroke the line -->
+        </path>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Flow Arrow (Passing Through) -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green -->
+        <fillcolor color="#27AE60"/>
+        <strokewidth width="4"/>
+        <!-- Arrow positioned horizontally through the arch opening -->
+        <!-- Shaft -->
+        <path> <move x="25" y="100"/> <line x="165" y="100"/> </path>
+        <stroke/>
+        <!-- Head -->
+        <path> <move x="153" y="93"/> <line x="167" y="100"/> <line x="153" y="107"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

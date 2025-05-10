@@ -1,0 +1,70 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.network, mxgraph.general -->
+
+<shape name="ids" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Stylized Data Flow / Network Traffic Lines -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green lines -->
+        <strokewidth width="3"/>
+        <!-- Two parallel horizontal lines representing traffic -->
+        <path> <move x="30" y="85"/> <line x="160" y="85"/> </path> <stroke/>
+        <path> <move x="30" y="105"/> <line x="160" y="105"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Magnifying Glass Symbol (Inspection) -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Strong Blue -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>
+        <!-- Lens Circle - Positioned over the data lines -->
+        <ellipse x="50" y="50" w="80" h="80"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/>
+
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <!-- Dark Blue/Grey handle -->
+        <strokecolor color="#2C3E50"/>
+        <strokewidth width="2"/>
+        <save/>
+        <rotate angle="45" x="116" y="116"/> <!-- Rotate around bottom-right connection -->
+        <roundrect x="110" y="110" w="45" h="15" arcsize="4"/>
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+        <restore/> <!-- Restore state after magnifying glass -->
+
+        <!-- 4. Alert Symbol (Detection Result) -->
+        <save/>
+        <strokecolor color="#A93226"/> <!-- Dark Red Border -->
+        <fillcolor color="#E74C3C"/>   <!-- Bright Red Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned near the magnifying glass lens, slightly offset -->
+        <!-- Red circle container -->
+        <ellipse x="105" y="40" w="30" h="30"/>
+        <fillstroke/>
+
+        <!-- White Exclamation Mark ! -->
+        <strokecolor color="#FFFFFF"/>
+        <fillcolor color="#FFFFFF"/>
+        <strokewidth width="3"/>
+        <!-- Bar -->
+        <path> <move x="120" y="48"/> <line x="120" y="60"/> </path> <stroke/>
+        <!-- Dot -->
+        <ellipse x="118" y="63" w="4" h="4"/>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

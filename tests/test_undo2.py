@@ -157,7 +157,7 @@ def browser_and_setup(request):
         )
         # Wait for the button inside the frame to be clickable
         WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "td:nth-child(1) > .geBtn"))
+            EC.element_to_be_clickable((By.ID, "customer_portal_erp_threat_model"))
         ).click()
     except TimeoutException:
         pytest.fail("Timed out waiting for iframe or button within iframe.")
@@ -165,6 +165,7 @@ def browser_and_setup(request):
         # Always switch back to default content
         driver.switch_to.default_content()
 
+    time.sleep(2)
     # Focus the node you're working on
     target_label = "Customer Web Client"
     target_cell_id = driver.execute_script(f"""

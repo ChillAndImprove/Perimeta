@@ -1,0 +1,65 @@
+<shapes name="mxgraph.network"> <!-- Or mxgraph.cloud, mxgraph.integration -->
+
+<shape name="serviceMesh" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Subtle Mesh Background Layer -->
+        <save/>
+        <strokecolor color="#BDC3C7"/> <!-- Light Grey for the mesh lines -->
+        <strokewidth width="1.5"/>
+        <!-- Draw a grid of lines -->
+        <!-- Vertical Lines -->
+        <path> <move x="47.5" y="20"/> <line x="47.5" y="170"/> </path> <stroke/>
+        <path> <move x="95" y="20"/> <line x="95" y="170"/> </path> <stroke/>
+        <path> <move x="142.5" y="20"/> <line x="142.5" y="170"/> </path> <stroke/>
+        <!-- Horizontal Lines -->
+        <path> <move x="20" y="47.5"/> <line x="170" y="47.5"/> </path> <stroke/>
+        <path> <move x="20" y="95"/> <line x="170" y="95"/> </path> <stroke/>
+        <path> <move x="20" y="142.5"/> <line x="170" y="142.5"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Service Nodes (Circles) - Drawn on top of mesh -->
+        <save/>
+        <strokecolor color="#FFFFFF"/> <!-- White border for contrast -->
+        <fillcolor color="#3498DB"/>   <!-- Medium Blue fill for nodes -->
+        <strokewidth width="2"/>
+        <!-- Place several nodes -->
+        <!-- Node 1 (Center) -->
+        <ellipse x="85" y="85" w="20" h="20"/> <fillstroke/>
+        <!-- Node 2 (Top-Left) -->
+        <ellipse x="45" y="45" w="20" h="20"/> <fillstroke/>
+        <!-- Node 3 (Top-Right) -->
+        <ellipse x="125" y="45" w="20" h="20"/> <fillstroke/>
+        <!-- Node 4 (Bottom-Left) -->
+        <ellipse x="45" y="125" w="20" h="20"/> <fillstroke/>
+        <!-- Node 5 (Bottom-Right) -->
+        <ellipse x="125" y="125" w="20" h="20"/> <fillstroke/>
+        <restore/>
+
+        <!-- 4. Connection Lines (Representing Managed Communication) -->
+        <save/>
+        <strokecolor color="#2E4053"/> <!-- Dark Grey/Blue for connections -->
+        <strokewidth width="2.5"/>     <!-- Slightly thicker lines -->
+        <!-- Connect nodes -->
+        <path> <move x="55" y="55"/> <line x="95" y="95"/> </path> <stroke/> <!-- TL to Center -->
+        <path> <move x="135" y="55"/> <line x="95" y="95"/> </path> <stroke/> <!-- TR to Center -->
+        <path> <move x="55" y="135"/> <line x="95" y="95"/> </path> <stroke/> <!-- BL to Center -->
+        <path> <move x="135" y="135"/> <line x="95" y="95"/> </path> <stroke/> <!-- BR to Center -->
+        <!-- Optional extra connections -->
+        <path> <move x="55" y="55"/> <line x="55" y="125"/> </path> <stroke/> <!-- TL to BL -->
+        <path> <move x="135" y="55"/> <line x="135" y="125"/> </path> <stroke/> <!-- TR to BR -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

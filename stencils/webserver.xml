@@ -1,0 +1,61 @@
+<!-- Complete Web Server Shape File -->
+<shapes name="mxgraph.servers"> <!-- <<< THIS IS THE ROOT ELEMENT -->
+
+<shape name="serverWebServer" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Base Server Box - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="40" y="32" w="111" h="127"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Document Symbol (on Server) - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#EAECEE"/> <!-- Off-white paper color -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- Positioned near the top-center of the scaled server box -->
+        <!-- Main page rectangle - SCALED -->
+        <rect x="63" y="47.5" w="63" h="47.5"/>
+        <fillstroke/>
+        <!-- Folded corner (triangle) - SCALED -->
+        <path>
+            <move x="111" y="47.5"/> <!-- Scaled Top-right corner -->
+            <line x="127" y="63"/> <!-- Scaled Point sticking out -->
+            <line x="111" y="63"/> <!-- Scaled Bottom-right corner of fold -->
+            <close/>
+        </path>
+        <fillstroke/>
+         <!-- Line on page to show fold - SCALED -->
+         <path>
+             <move x="111" y="47.5"/> <line x="111" y="63"/>
+         </path>
+         <stroke/>
+        <!-- Simplified lines for text - SCALED -->
+         <path> <move x="71" y="68"/> <line x="119" y="68"/> </path> <stroke/>
+         <path> <move x="71" y="76"/> <line x="119" y="76"/> </path> <stroke/>
+         <path> <move x="71" y="84"/> <line x="103" y="84"/> </path> <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

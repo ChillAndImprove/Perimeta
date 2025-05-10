@@ -1,0 +1,66 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.web, mxgraph.api -->
+
+<shape name="webServiceRest" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Globe Symbol (Web Aspect) -->
+        <save/>
+        <strokecolor color="#2E86C1"/> <!-- Medium Blue Border -->
+        <fillcolor color="#5DADE2"/>   <!-- Lighter Blue Fill -->
+        <strokewidth width="3"/>
+
+        <!-- Main Globe Circle -->
+        <!-- Centered, Diameter 100 -->
+        <ellipse x="45" y="45" w="100" h="100"/>
+        <fillstroke/>
+
+        <!-- Simplified Latitude/Longitude Lines -->
+        <strokecolor color="#A9CCE3"/> <!-- Very Light Blue/Grey Lines -->
+        <strokewidth width="1.5"/>
+        <!-- Vertical Meridian -->
+        <path> <move x="95" y="45"/> <line x="95" y="145"/> </path> <stroke/>
+        <!-- Horizontal Equator -->
+        <path> <move x="45" y="95"/> <line x="145" y="95"/> </path> <stroke/>
+        <!-- Angled Lines -->
+        <path> <move x="65" y="55"/> <line x="125" y="135"/> </path> <stroke/>
+        <path> <move x="125" y="55"/> <line x="65" y="135"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Request/Response Arrows (REST Aspect) -->
+        <!-- Request Arrow (Green) -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green -->
+        <fillcolor color="#27AE60"/>
+        <strokewidth width="4"/> <!-- Thicker Arrows -->
+        <!-- Shaft (Left to Globe) -->
+        <path> <move x="25" y="75"/> <line x="75" y="75"/> </path> <stroke/>
+        <!-- Head -->
+        <path> <move x="65" y="65"/> <line x="80" y="75"/> <line x="65" y="85"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+        <!-- Response Arrow (Orange) -->
+        <save/>
+        <strokecolor color="#E67E22"/> <!-- Orange -->
+        <fillcolor color="#E67E22"/>
+        <strokewidth width="4"/> <!-- Thicker Arrows -->
+        <!-- Shaft (Globe to Right) -->
+        <path> <move x="115" y="115"/> <line x="165" y="115"/> </path> <stroke/>
+        <!-- Head -->
+        <path> <move x="155" y="105"/> <line x="170" y="115"/> <line x="155" y="125"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

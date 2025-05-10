@@ -1,0 +1,91 @@
+<shapes name="mxgraph.process"> <!-- Or mxgraph.ci-cd, mxgraph.general -->
+
+<shape name="buildPipeline" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Pipeline Path (Diagonal Conveyor Belt Style) -->
+        <save/>
+        <strokecolor color="#5D6D7E"/> <!-- Medium Grey/Blue -->
+        <fillcolor color="#AAB7B8"/>   <!-- Lighter Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- Draw two parallel lines for the belt edges -->
+        <!-- Top Edge -->
+        <path> <move x="25" y="55"/> <line x="165" y="125"/> </path> <stroke/>
+        <!-- Bottom Edge -->
+        <path> <move x="45" y="75"/> <line x="185" y="145"/> </path> <stroke/>
+        <!-- Optional: Fill between the lines (could be tricky, maybe omit for simplicity) -->
+        <!-- <path> <move x="25" y="55"/> <line x="165" y="125"/> <line x="185" y="145"/> <line x="45" y="75"/> <close/> </path> <fill/> -->
+
+        <!-- Arrow Head at the end -->
+        <strokecolor color="#5D6D7E"/>
+        <fillcolor color="#5D6D7E"/>
+        <path>
+            <move x="165" y="115"/> <!-- Point above end of top line -->
+            <line x="180" y="130"/> <!-- Tip of arrow -->
+            <line x="172" y="138"/> <!-- Point below end of top line -->
+            <!-- Optional close for filled arrowhead -->
+            <!-- <close/> -->
+        </path>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Symbols on the Pipeline -->
+
+        <!-- Gear Symbol (Processing/Build Step) -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish-Orange -->
+        <fillcolor color="#F5B041"/>   <!-- Lighter Orange -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned near the start of the pipeline -->
+        <!-- Gear Center approx: x=65, y=80 -->
+        <!-- Outer Circle -->
+        <ellipse x="50" y="65" w="30" h="30"/>
+        <fillstroke/>
+        <!-- Inner Circle (Cutout) -->
+        <ellipse x="60" y="75" w="10" h="10">
+             <fillcolor color="#D6EAF8"/> <!-- Match background -->
+             <strokecolor color="#AF601A"/>
+             <strokewidth width="1"/>
+        </ellipse>
+        <fillstroke/>
+        <!-- Simple Teeth (Lines radiating out) -->
+        <strokewidth width="3"/>
+        <path> <move x="65" y="65"/> <line x="65" y="58"/> </path> <stroke/> <!-- Top -->
+        <path> <move x="80" y="80"/> <line x="87" y="80"/> </path> <stroke/> <!-- Right -->
+        <path> <move x="65" y="95"/> <line x="65" y="102"/> </path> <stroke/> <!-- Bottom -->
+        <path> <move x="50" y="80"/> <line x="43" y="80"/> </path> <stroke/> <!-- Left -->
+        <!-- Diagonal Teeth -->
+        <path> <move x="76" y="70"/> <line x="81" y="65"/> </path> <stroke/> <!-- Top-Right -->
+        <path> <move x="76" y="90"/> <line x="81" y="95"/> </path> <stroke/> <!-- Bottom-Right -->
+        <path> <move x="54" y="90"/> <line x="49" y="95"/> </path> <stroke/> <!-- Bottom-Left -->
+        <path> <move x="54" y="70"/> <line x="49" y="65"/> </path> <stroke/> <!-- Top-Left -->
+        <restore/>
+
+        <!-- Package Symbol (Output/Artifact) -->
+        <save/>
+        <strokecolor color="#145A32"/> <!-- Dark Green -->
+        <fillcolor color="#A9DFBF"/>   <!-- Light Green -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned near the end of the pipeline -->
+        <!-- Box Center approx: x=150, y=120 -->
+        <rect x="135" y="105" w="30" h="30"/>
+        <fillstroke/>
+        <!-- Simple tape lines -->
+        <strokewidth width="1.5"/>
+        <path> <move x="135" y="120"/> <line x="165" y="120"/> </path> <stroke/> <!-- Horizontal -->
+        <path> <move x="150" y="105"/> <line x="150" y="135"/> </path> <stroke/> <!-- Vertical -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

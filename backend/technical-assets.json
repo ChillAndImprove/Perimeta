@@ -1,0 +1,142 @@
+[
+  {
+    "id": "customer-client",
+    "title": "Customer Web Client",
+    "type": "external-entity",
+    "technology": "browser",
+    "tags": [],
+    "raa": 0
+  },
+  {
+    "id": "backoffice-client",
+    "title": "Backoffice Client",
+    "type": "external-entity",
+    "technology": "desktop",
+    "tags": [],
+    "raa": 0
+  },
+  {
+    "id": "backend-admin-client",
+    "title": "Backend Admin Client",
+    "type": "external-entity",
+    "technology": "browser",
+    "tags": [],
+    "raa": 0
+  },
+  {
+    "id": "load-balancer",
+    "title": "Load Balancer",
+    "type": "process",
+    "technology": "load-balancer",
+    "tags": [],
+    "raa": 71.37950772753292
+  },
+  {
+    "id": "apache-webserver",
+    "title": "Apache Webserver",
+    "type": "process",
+    "technology": "web-server",
+    "tags": [
+      "linux",
+      "apache",
+      "aws:ec2"
+    ],
+    "raa": 65.08299942759017
+  },
+  {
+    "id": "identity-provider",
+    "title": "Identity Provider",
+    "type": "process",
+    "technology": "identity-provider",
+    "tags": [
+      "linux",
+      "jboss",
+      "keycloak"
+    ],
+    "raa": 70.80709788208358
+  },
+  {
+    "id": "ldap-auth-server",
+    "title": "LDAP Auth Server",
+    "type": "datastore",
+    "technology": "identity-store-ldap",
+    "tags": [
+      "linux"
+    ],
+    "raa": 65.08299942759017
+  },
+  {
+    "id": "marketing-cms",
+    "title": "Marketing CMS",
+    "type": "process",
+    "technology": "cms",
+    "tags": [
+      "linux"
+    ],
+    "raa": 50.20034344590727
+  },
+  {
+    "id": "erp-system",
+    "title": "Backoffice ERP System",
+    "type": "process",
+    "technology": "erp",
+    "tags": [
+      "linux"
+    ],
+    "raa": 89.69662278191186
+  },
+  {
+    "id": "contract-fileserver",
+    "title": "Contract Fileserver",
+    "type": "datastore",
+    "technology": "file-server",
+    "tags": [
+      "linux",
+      "aws:s3"
+    ],
+    "raa": 48.597595878649116
+  },
+  {
+    "id": "sql-database",
+    "title": "Customer Contract Database",
+    "type": "datastore",
+    "technology": "database",
+    "tags": [
+      "linux",
+      "mysql"
+    ],
+    "raa": 100
+  },
+  {
+    "id": "external-dev-client",
+    "title": "External Development Client",
+    "type": "external-entity",
+    "technology": "devops-client",
+    "tags": [
+      "linux"
+    ],
+    "raa": 0
+  },
+  {
+    "id": "git-repo",
+    "title": "Git Repository",
+    "type": "process",
+    "technology": "sourcecode-repository",
+    "tags": [
+      "linux",
+      "git"
+    ],
+    "raa": 59.98855180309101
+  },
+  {
+    "id": "jenkins-buildserver",
+    "title": "Jenkins Buildserver",
+    "type": "process",
+    "technology": "build-pipeline",
+    "tags": [
+      "linux",
+      "jenkins"
+    ],
+    "raa": 67.37263880938752
+  }
+]

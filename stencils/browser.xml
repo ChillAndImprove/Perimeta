@@ -1,0 +1,78 @@
+<shapes name="mxgraph.computers">
+
+<shape name="clientBrowser" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Browser Window Frame - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/> <!-- Frame/toolbar fill -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="16" y="32" w="158" h="127" arcsize="8"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Browser Content Area - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#FFFFFF"/> <!-- White content background -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="19" y="63" w="152" h="92"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 4. Simplified Navigation Buttons (in the grey toolbar area) - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#7F8C8D"/> <!-- Darker grey buttons -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+
+        <!-- Back Button (Circle) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="27" y="40" w="16" h="16"/>
+        <fillstroke/>
+        <!-- Optional: Triangle inside back button - SCALED (if uncommented) -->
+        <!-- <strokecolor color="#EAECEE"/>
+        <path>
+            <move x="36" y="44"/> <line x="32" y="48"/> <line x="36" y="51"/>
+        </path>
+        <stroke/> -->
+
+        <!-- Forward Button (Circle) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+         <ellipse x="51" y="40" w="16" h="16"/>
+        <fillstroke/>
+         <!-- Optional: Triangle inside forward button - SCALED (if uncommented) -->
+        <!-- <strokecolor color="#EAECEE"/>
+        <path>
+            <move x="57" y="44"/> <line x="62" y="48"/> <line x="57" y="51"/>
+        </path>
+        <stroke/> -->
+
+        <!-- Refresh/Other Button (Circle) - SCALED -->
+        <!-- SCALED x, y, w, h -->
+        <ellipse x="75" y="40" w="16" h="16"/>
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after drawing buttons -->
+
+    </foreground>
+</shape>
+
+</shapes>

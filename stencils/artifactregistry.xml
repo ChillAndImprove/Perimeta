@@ -1,0 +1,53 @@
+<shapes name="mxgraph.storage"> <!-- Or mxgraph.cloud, mxgraph.ci-cd -->
+
+<shape name="artifactRegistry" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Registry Container Symbol -->
+        <save/>
+        <strokecolor color="#003366"/> <!-- Dark Blue Border -->
+        <fillcolor color="#0050B0"/>   <!-- Medium Blue Fill -->
+        <strokewidth width="4"/>
+        <!-- A large rounded box centered within the background -->
+        <roundrect x="30" y="30" w="130" h="130" arcsize="10"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Artifact/Package Symbols (Inside Container) -->
+        <!-- Package Style -->
+        <save/>
+        <strokecolor color="#8B4513"/> <!-- SaddleBrown (Cardboard Box border) -->
+        <fillcolor color="#D2B48C"/>   <!-- Tan (Cardboard Box fill) -->
+        <strokewidth width="2"/>
+
+        <!-- Package 1 (Top Left within Container) -->
+        <rect x="50" y="50" w="35" h="35"/>
+        <fillstroke/>
+
+        <!-- Package 2 (Top Right within Container) -->
+        <rect x="105" y="50" w="35" h="35"/>
+        <fillstroke/>
+
+        <!-- Package 3 (Bottom Left within Container) -->
+        <rect x="50" y="105" w="35" h="35"/>
+        <fillstroke/>
+
+        <!-- Package 4 (Bottom Right within Container) -->
+        <rect x="105" y="105" w="35" h="35"/>
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after drawing packages -->
+
+    </foreground>
+</shape>
+
+</shapes>

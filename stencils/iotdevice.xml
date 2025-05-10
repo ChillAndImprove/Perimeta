@@ -1,0 +1,56 @@
+<shapes name="mxgraph.iot"> <!-- Or mxgraph.devices, mxgraph.general -->
+
+<shape name="iotDevice" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Device Hardware Symbol (Simple Box) -->
+        <save/>
+        <strokecolor color="#1A5276"/> <!-- Dark Teal/Blue Border -->
+        <fillcolor color="#A3E4D7"/>   <!-- Light Teal/Mint Fill -->
+        <strokewidth width="3"/>
+        <!-- Centered, moderately sized box -->
+        <roundrect x="55" y="90" w="80" h="60" arcsize="4"/>
+        <fillstroke/>
+        <!-- Optional: Add a small status light -->
+        <fillcolor color="#2ECC71"/> <!-- Green light -->
+        <strokecolor color="none"/>
+        <ellipse x="65" y="105" w="10" h="10"/>
+        <fill/>
+        <restore/>
+
+        <!-- 3. Connectivity Symbol (WiFi Arcs) -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Medium Blue -->
+        <strokewidth width="3"/>       <!-- Clear arcs -->
+        <!-- Arcs radiating upwards from the device box center (approx 95, 90) -->
+        <!-- Using path/arc for simplicity -->
+        <!-- Arc 1 (Smallest) -->
+        <path>
+            <move x="73.8" y="68.8"/> <!-- Calculated start: cx+r*cos(225), cy+r*sin(225) for r=30 -->
+            <arc rx="30" ry="30" x-axis-rotation="0" large-arc-flag="0" sweep-flag="1" x="116.2" y="68.8"/> <!-- Calculated end: cx+r*cos(315), cy+r*sin(315) -->
+        </path> <stroke/>
+        <!-- Arc 2 (Medium) -->
+         <path>
+            <move x="60" y="55"/> <!-- Approx start for r=50 -->
+            <arc rx="50" ry="50" x-axis-rotation="0" large-arc-flag="0" sweep-flag="1" x="130" y="55"/> <!-- Approx end for r=50 -->
+        </path> <stroke/>
+        <!-- Arc 3 (Largest) -->
+         <path>
+            <move x="46.3" y="41.3"/> <!-- Approx start for r=70 -->
+            <arc rx="70" ry="70" x-axis-rotation="0" large-arc-flag="0" sweep-flag="1" x="143.7" y="41.3"/> <!-- Approx end for r=70 -->
+        </path> <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

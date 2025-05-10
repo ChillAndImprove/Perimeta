@@ -1,0 +1,68 @@
+<shapes name="mxgraph.storage"> <!-- Or mxgraph.cloud, mxgraph.data -->
+
+<shape name="dataLake" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Lake Surface Symbol -->
+        <save/>
+        <strokecolor color="#2E86C1"/> <!-- Darker Blue Border for Lake -->
+        <fillcolor color="#5DADE2"/>   <!-- Medium Blue Fill for Lake Water -->
+        <strokewidth width="3"/>
+        <!-- Wide ellipse representing the lake surface, lower half -->
+        <ellipse x="25" y="100" w="140" h="60"/>
+        <fillstroke/>
+        <!-- Subtle Ripple Lines -->
+        <strokecolor color="#A9CCE3"/> <!-- Light Blue for Ripples -->
+        <strokewidth width="1.5"/>
+        <path>
+            <move x="60" y="120"/>
+            <quad x1="95" y1="115" x="130" y="120"/> <!-- Top Ripple -->
+        </path> <stroke/>
+        <path>
+            <move x="50" y="135"/>
+            <quad x1="95" y1="130" x="140" y="135"/> <!-- Bottom Ripple -->
+        </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Diverse Data Symbols (Floating/Entering) -->
+        <save/>
+        <strokewidth width="1.5"/>
+
+        <!-- Data Item 1 (Square - Structured?) -->
+        <strokecolor color="#117A65"/> <!-- Dark Green Border -->
+        <fillcolor color="#A9DFBF"/>   <!-- Light Green Fill -->
+        <rect x="50" y="80" w="25" h="25"/>
+        <fillstroke/>
+
+        <!-- Data Item 2 (Circle - Unstructured?) -->
+        <strokecolor color="#B7950B"/> <!-- Dark Yellow Border -->
+        <fillcolor color="#FAD7A0"/>   <!-- Light Yellow/Orange Fill -->
+        <ellipse x="85" y="70" w="25" h="25"/>
+        <fillstroke/>
+
+        <!-- Data Item 3 (Triangle - Semi-structured?) -->
+        <strokecolor color="#7D3C98"/> <!-- Dark Purple Border -->
+        <fillcolor color="#D2B4DE"/>   <!-- Light Purple Fill -->
+        <path>
+            <move x="130" y="95"/> <!-- Bottom Left -->
+            <line x="142.5" y="70"/> <!-- Top Center -->
+            <line x="155" y="95"/> <!-- Bottom Right -->
+            <close/>
+        </path>
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after data items -->
+
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,41 @@
+<shapes name="mxgraph.storage"> <!-- Or mxgraph.cloud, mxgraph.virtualization -->
+
+<shape name="blockStorage" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Stacked Blocks Symbol -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="3"/>
+
+        <!-- Bottom Block -->
+        <!-- Centered horizontally, positioned lower -->
+        <roundrect x="60" y="105" w="70" h="30" arcsize="4"/>
+        <fillstroke/>
+
+        <!-- Middle Block -->
+        <!-- Stacked on top of the bottom block -->
+        <roundrect x="60" y="75" w="70" h="30" arcsize="4"/>
+        <fillstroke/>
+
+        <!-- Top Block -->
+        <!-- Stacked on top of the middle block -->
+        <roundrect x="60" y="45" w="70" h="30" arcsize="4"/>
+        <fillstroke/>
+
+        <restore/> <!-- Restore state after drawing blocks -->
+
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,70 @@
+<shapes name="mxgraph.integration"> <!-- Or mxgraph.services, mxgraph.general -->
+
+<shape name="messageQueue" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Queue Container Symbol -->
+        <save/>
+        <strokecolor color="#512E5F"/> <!-- Dark Purple Border -->
+        <fillcolor color="#A569BD"/>   <!-- Medium Purple Fill -->
+        <strokewidth width="3"/>
+        <!-- A horizontal box representing the queue storage -->
+        <roundrect x="40" y="75" w="110" h="40" arcsize="6"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Message Symbols (Inside Queue) -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Border -->
+        <fillcolor color="#EAECEE"/>   <!-- Off-White Message Fill -->
+        <strokewidth width="1.5"/>
+        <!-- Small rectangles representing messages -->
+        <!-- Message 1 -->
+        <rect x="55" y="83" w="25" h="20"/>
+        <fillstroke/>
+        <!-- Message 2 -->
+        <rect x="82" y="86" w="25" h="20"/> <!-- Slightly offset -->
+        <fillstroke/>
+         <!-- Message 3 -->
+        <rect x="110" y="83" w="25" h="20"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 4. Flow Arrows -->
+        <!-- Incoming Arrow (Green) -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green -->
+        <fillcolor color="#27AE60"/>
+        <strokewidth width="4"/>
+        <!-- Shaft (Left to Queue Container) -->
+        <path> <move x="15" y="95"/> <line x="40" y="95"/> </path> <stroke/>
+        <!-- Head -->
+        <path> <move x="30" y="88"/> <line x="42" y="95"/> <line x="30" y="102"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+        <!-- Outgoing Arrow (Orange) -->
+        <save/>
+        <strokecolor color="#E67E22"/> <!-- Orange -->
+        <fillcolor color="#E67E22"/>
+        <strokewidth width="4"/>
+        <!-- Shaft (Queue Container to Right) -->
+        <path> <move x="150" y="95"/> <line x="175" y="95"/> </path> <stroke/>
+        <!-- Head -->
+        <path> <move x="163" y="88"/> <line x="177" y="95"/> <line x="163" y="102"/> <close/> </path>
+        <fillstroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

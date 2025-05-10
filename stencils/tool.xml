@@ -1,0 +1,60 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.compute, mxgraph.tools -->
+
+<shape name="tool" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Crossed Tools Symbol -->
+        <save/>
+        <strokecolor color="#34495E"/> <!-- Dark Slate Grey Border -->
+        <fillcolor color="#5D6D7E"/>   <!-- Medium Slate Grey Fill -->
+        <strokewidth width="3"/>
+
+        <!-- Screwdriver (Diagonal, Top-Left to Bottom-Right) -->
+        <save/>
+        <rotate angle="45" x="95" y="95"/> <!-- Rotate around center -->
+        <!-- Handle -->
+        <rect x="85" y="80" w="20" h="60"/> <!-- Centered vertically -->
+        <fillstroke/>
+        <!-- Shaft -->
+        <rect x="91" y="35" w="8" h="45"/> <!-- Above handle -->
+        <fillstroke/>
+        <!-- Tip (Flathead) -->
+        <rect x="89" y="30" w="12" h="5"/> <!-- At the very top -->
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+
+        <!-- Wrench (Diagonal, Top-Right to Bottom-Left) - Drawn on top -->
+        <save/>
+        <rotate angle="-45" x="95" y="95"/> <!-- Rotate around center -->
+        <!-- Handle -->
+        <rect x="85" y="80" w="20" h="60"/> <!-- Centered vertically -->
+        <fillstroke/>
+        <!-- Head (Simplified Open End) -->
+        <path>
+            <move x="88" y="30"/> <!-- Top Left Jaw Point -->
+            <line x="88" y="45"/> <!-- Inner Left Jaw -->
+            <line x="93" y="45"/> <!-- Gap Start -->
+            <move x="97" y="45"/> <!-- Gap End -->
+            <line x="102" y="45"/> <!-- Inner Right Jaw -->
+            <line x="102" y="30"/> <!-- Top Right Jaw Point -->
+        </path>
+        <strokecolor color="#34495E"/> <strokewidth width="4"/> <!-- Thicker head outline -->
+        <stroke/>
+        <!-- Connect Head to Handle (implicitly covered by handle rect fill) -->
+        <restore/> <!-- Restore rotation -->
+
+        <restore/> <!-- Restore state after drawing tools -->
+
+    </foreground>
+</shape>
+
+</shapes>

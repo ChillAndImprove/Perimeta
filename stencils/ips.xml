@@ -1,0 +1,69 @@
+<shapes name="mxgraph.security"> <!-- Or mxgraph.network, mxgraph.general -->
+
+<shape name="ips" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Stylized Data Flow / Network Traffic Lines -->
+        <save/>
+        <strokecolor color="#27AE60"/> <!-- Green lines -->
+        <strokewidth width="3"/>
+        <!-- Lines coming from the left, stopping before the wall -->
+        <path> <move x="15" y="85"/> <line x="95" y="85"/> </path> <stroke/>
+        <path> <move x="15" y="105"/> <line x="95" y="105"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Firewall Brick Wall Symbol (Blocking Element) -->
+        <save/>
+        <strokecolor color="#A0522D"/> <!-- Sienna Border -->
+        <fillcolor color="#CD5C5C"/>   <!-- IndianRed Fill -->
+        <strokewidth width="2"/>
+        <!-- Positioned on the right side -->
+        <rect x="100" y="30" w="50" h="130"/>
+        <fillstroke/>
+        <!-- Mortar Lines -->
+        <strokecolor color="#F5F5F5"/> <strokewidth width="1"/>
+        <!-- Horizontal -->
+        <path> <move x="100" y="55"/> <line x="150" y="55"/> </path> <stroke/>
+        <path> <move x="100" y="80"/> <line x="150" y="80"/> </path> <stroke/>
+        <path> <move x="100" y="105"/> <line x="150" y="105"/> </path> <stroke/>
+        <path> <move x="100" y="130"/> <line x="150" y="130"/> </path> <stroke/>
+        <!-- Vertical (Staggered) -->
+        <path> <move x="125" y="30"/> <line x="125" y="55"/> </path> <stroke/>
+        <path> <move x="112.5" y="55"/> <line x="112.5" y="80"/> </path> <stroke/>
+        <path> <move x="137.5" y="55"/> <line x="137.5" y="80"/> </path> <stroke/>
+        <path> <move x="125" y="80"/> <line x="125" y="105"/> </path> <stroke/>
+        <path> <move x="112.5" y="105"/> <line x="112.5" y="130"/> </path> <stroke/>
+        <path> <move x="137.5" y="105"/> <line x="137.5" y="130"/> </path> <stroke/>
+        <path> <move x="125" y="130"/> <line x="125" y="160"/> </path> <stroke/>
+        <restore/> <!-- Restore state after wall -->
+
+        <!-- 4. Magnifying Glass Symbol (Inspection) - Drawn Last -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Strong Blue -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>
+        <!-- Lens Circle - Positioned over the data lines on the left -->
+        <ellipse x="35" y="50" w="80" h="80"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/>
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <strokecolor color="#2C3E50"/> <strokewidth width="2"/>
+        <save/> <rotate angle="45" x="101" y="116"/>
+        <roundrect x="95" y="110" w="45" h="15" arcsize="4"/>
+        <fillstroke/> <restore/> <!-- Restore rotation -->
+        <restore/> <!-- Restore state after magnifying glass -->
+
+    </foreground>
+</shape>
+
+</shapes>

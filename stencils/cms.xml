@@ -1,0 +1,83 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.web, mxgraph.general -->
+
+<shape name="cms" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Document Symbol (Content) -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Paper -->
+        <strokewidth width="2"/>
+        <!-- Positioned slightly upper-left -->
+        <!-- Main page rectangle -->
+        <rect x="50" y="40" w="90" h="80"/>
+        <fillstroke/>
+        <!-- Folded corner -->
+        <path> <move x="115" y="40"/> <line x="140" y="65"/> <line x="115" y="65"/> <close/> </path>
+        <fillstroke/>
+        <path> <move x="115" y="40"/> <line x="115" y="65"/> </path> <stroke/>
+        <!-- Simplified text lines -->
+        <strokewidth width="1"/>
+        <path> <move x="60" y="60"/> <line x="105" y="60"/> </path> <stroke/>
+        <path> <move x="60" y="70"/> <line x="110" y="70"/> </path> <stroke/>
+        <path> <move x="60" y="80"/> <line x="100" y="80"/> </path> <stroke/>
+        <path> <move x="60" y="90"/> <line x="105" y="90"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Gear Symbols (Management System) -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish-Orange Border -->
+        <fillcolor color="#F5B041"/>   <!-- Lighter Orange Fill -->
+        <strokewidth width="2.5"/>
+
+        <!-- Gear 1 (Larger, Overlapping Bottom Right) -->
+        <save/>
+        <!-- Center x=125, y=125, Radius=25 -->
+        <ellipse x="100" y="100" w="50" h="50"/>
+        <fillstroke/>
+        <!-- Inner Cutout -->
+        <ellipse x="117.5" y="117.5" w="15" h="15">
+             <fillcolor color="#D6EAF8"/> <strokecolor color="#AF601A"/> <strokewidth width="1"/>
+        </ellipse>
+        <fillstroke/>
+        <!-- Teeth (Simplified) -->
+        <strokewidth width="4"/>
+        <path> <move x="125" y="100"/> <line x="125" y="93"/> </path> <stroke/> <!-- Top -->
+        <path> <move x="150" y="125"/> <line x="157" y="125"/> </path> <stroke/> <!-- Right -->
+        <path> <move x="125" y="150"/> <line x="125" y="157"/> </path> <stroke/> <!-- Bottom -->
+        <path> <move x="100" y="125"/> <line x="93" y="125"/> </path> <stroke/> <!-- Left -->
+        <restore/>
+
+        <!-- Gear 2 (Smaller, Interlocking Top Left of Gear 1) -->
+        <save/>
+        <!-- Center x=105, y=105, Radius=15 -->
+        <ellipse x="90" y="90" w="30" h="30"/>
+        <fillstroke/>
+         <!-- Inner Cutout -->
+        <ellipse x="100" y="100" w="10" h="10">
+             <fillcolor color="#D6EAF8"/> <strokecolor color="#AF601A"/> <strokewidth width="1"/>
+        </ellipse>
+        <fillstroke/>
+        <!-- Teeth (Simplified) -->
+        <strokewidth width="3"/>
+        <path> <move x="105" y="90"/> <line x="105" y="85"/> </path> <stroke/> <!-- Top -->
+        <path> <move x="120" y="105"/> <line x="125" y="105"/> </path> <stroke/> <!-- Right -->
+        <path> <move x="105" y="120"/> <line x="105" y="125"/> </path> <stroke/> <!-- Bottom -->
+        <path> <move x="90" y="105"/> <line x="85" y="105"/> </path> <stroke/> <!-- Left -->
+        <restore/>
+
+        <restore/> <!-- Restore state after gears -->
+
+    </foreground>
+</shape>
+
+</shapes>

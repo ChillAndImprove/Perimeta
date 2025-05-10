@@ -1,0 +1,58 @@
+<shapes name="mxgraph.services"> <!-- Or mxgraph.general, mxgraph.web -->
+
+<shape name="searchEngine" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Document/Page Symbol (What is being searched) - Behind -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Paper -->
+        <strokewidth width="2"/>
+        <!-- Positioned slightly lower-right -->
+        <rect x="70" y="70" w="80" h="80"/> <!-- Main page rectangle -->
+        <fillstroke/>
+        <!-- Folded corner -->
+        <path> <move x="120" y="70"/> <line x="150" y="100"/> <line x="120" y="100"/> <close/> </path> <fillstroke/>
+        <path> <move x="120" y="70"/> <line x="120" y="100"/> </path> <stroke/>
+        <!-- Simplified text lines -->
+        <strokewidth width="1"/>
+        <path> <move x="80" y="90"/> <line x="130" y="90"/> </path> <stroke/>
+        <path> <move x="80" y="100"/> <line x="140" y="100"/> </path> <stroke/>
+        <path> <move x="80" y="110"/> <line x="130" y="110"/> </path> <stroke/>
+        <path> <move x="80" y="120"/> <line x="120" y="120"/> </path> <stroke/>
+        <restore/>
+
+        <!-- 3. Magnifying Glass Symbol (Searching Action) - In Front -->
+        <save/>
+        <strokecolor color="#2980B9"/> <!-- Strong Blue -->
+        <fillcolor color="#FFFFFF"/>   <!-- White lens -->
+        <alpha alpha="0.7"/>        <!-- Slightly transparent lens -->
+        <strokewidth width="4"/>
+        <!-- Lens Circle - Positioned upper-left, overlapping the document -->
+        <ellipse x="40" y="40" w="90" h="90"/>
+        <fillstroke/>
+        <alpha alpha="1.0"/>
+        <!-- Handle -->
+        <fillcolor color="#34495E"/> <!-- Dark Blue/Grey handle -->
+        <strokecolor color="#2C3E50"/>
+        <strokewidth width="2"/>
+        <save/>
+        <rotate angle="45" x="111" y="111"/> <!-- Rotate around bottom-right connection -->
+        <roundrect x="105" y="105" w="45" h="15" arcsize="4"/>
+        <fillstroke/>
+        <restore/> <!-- Restore rotation -->
+        <restore/> <!-- Restore state after magnifying glass -->
+
+    </foreground>
+</shape>
+
+</shapes>

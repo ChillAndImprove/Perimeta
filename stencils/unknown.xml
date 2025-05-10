@@ -1,0 +1,33 @@
+        <shapes name="mxgraph.general">
+
+<shape name="unknownTechnology" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - Neutral Grey - SCALED -->
+        <save/>
+        <strokecolor color="#666666"/>
+        <fillcolor color="#E0E0E0"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Centered Question Mark Text - SCALED -->
+        <save/>
+        <fontcolor color="#FF0000"/> <!-- BRIGHT RED -->
+        <!-- SCALED fontsize - Adjusted proportionally and centered in the full shape -->
+        <!-- Font size scaling is less precise, aiming for similar visual weight. 120 might be a good start for 190 height. -->
+        <fontsize size="140"/>
+        <fontstyle style="1"/>     <!-- Bold -->
+
+        <!-- Text bounding box now covers the entire shape area for centering -->
+                <text str="?" x="100" y="75" w="60" h="60" align="center" valign="middle"/>
+
+        <!-- No fill/stroke needed for text itself -->
+        <restore/> <!-- Restore state after text -->
+    </foreground>
+</shape>
+
+</shapes>

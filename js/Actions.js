@@ -4,7 +4,25 @@
  *
  * Constructs the actions object for the given UI.
  */
-
+function checkIdExists(graph, id) {
+  // Assuming a method to check ID exists in your structure, you can modify this according to your application's logic
+  var exists = graph.model.threagile.getIn(['technical_assets', id, 'id']);
+  return !!exists; // Convert to boolean
+}
+function generateUniquedataId(graph) {
+  var newId;
+  do {
+      newId = generateRandomId('da-' ,25); // Generate a random ID
+  } while (checkIdExists(graph, newId)); // Ensure it's unique
+  return newId;
+}
+function generateRandomId(prefix, totalLength) {
+  let randomPart = '';
+  while (randomPart.length + prefix.length < totalLength) {
+    randomPart += Math.random().toString(36).substr(2);
+  }
+  return prefix + randomPart.substring(0, totalLength - prefix.length);
+}
 /**
  * Normalizes list-like properties within trust boundaries in a YAML Document object.
  * Specifically ensures 'technical_assets_inside' and 'trust_boundaries_nested'
@@ -249,7 +267,7 @@ Actions.prototype.init = function () {
               let jsonObj;
               try {
                 let temp= window.parseModelViaString(xml);
-                if (temp.includes("$$__ERROR__$$")) {
+                if (temp && !temp.technicalAssets && temp.includes("$$__ERROR__$$")) {
                   
                   setTimeout(loadingBar.hideLoadingBar, 500);
 
@@ -299,7 +317,8 @@ Swal.fire({
                 
                   return;
               }
-                jsonObj = JSON.parse(temp);
+                //jsonObj = JSON.parse(temp);
+                jsonObj = temp;
 
 
 
@@ -321,7 +340,7 @@ Swal.fire({
                 return;
               }
               dot = window.printDataFlowDiagramGraphvizDOT();
-              let dotJson = dotParser.parse(dot)[0];
+              let dotJson = window.DOTParser(dot);
               jsonObj = keysToSnakeCase(jsonObj);
 
 
@@ -335,15 +354,17 @@ Swal.fire({
 
               let cells = [];
               let nodeIdMap = {};
-              var vizInstance = new Viz();
+              var vizInstance = window.Viz();
               function applyTransform(coord, scale, translate) {
                 return (coord * scale) + translate;
               }
               vizInstance
-                .renderString(dot)
-                .then(function (result) {
+                .then(function (vizRendererObject) {
 
-                  let svg = result;
+                  const svg = vizRendererObject.renderString(dot, { 
+                        format: "svg",
+                        engine: "dot"
+                    });
                   let parser = new DOMParser();
                   let svgDoc = parser.parseFromString(svg, "image/svg+xml");
 
@@ -730,163 +751,171 @@ Swal.fire({
 
 
 
-                  // Parse edges
-                  let edgeStmts = dotJson.children.filter(
-                    (child) => child.type === "edge_stmt"
-                  );
+                    // Get the main graph object first
+                    const mainGraphObject = dotJson.children?.[0];
 
-                  // --- NO Deduplication, NO visualEdgeMap ---
+                    // Filter the children of the main graph object
+                    const edgeStmts = mainGraphObject?.children?.filter(
+                        (child) => child.type === 'Edge' // Use the correct type value 'Edge'
+                    ) ?? [];                  // Now iterate over ALL edge statements from the DOT file
+                    edgeStmts.forEach((edgeStmt, index) => {
+                        // --- CORRECTED NODE ACCESS ---
+                        // Use optional chaining for safety in case structure is unexpected
+                        let sourceTitle = edgeStmt.targets?.[0]?.id?.value;
+                        let targetTitle = edgeStmt.targets?.[1]?.id?.value;
 
-                  // Now iterate over ALL edge statements from the DOT file
-                  edgeStmts.forEach((edgeStmt, index) => { // Added index for potential unique edge IDs if needed
-                    let sourceTitle = edgeStmt.edge_list[0].id;
-                    let targetTitle = edgeStmt.edge_list[1].id;
-                    let edgeStyle = "edgeStyle=orthogonalEdgeStyle;"; // Base style
+                        // Check if source/target titles were successfully extracted
+                        if (!sourceTitle || !targetTitle) {
+                            console.warn("Could not extract source or target ID from edge statement:", edgeStmt);
+                            return; // Skip this edge if IDs are missing
+                        }
 
-                    // Extract the protocol label from the DOT edge attributes
-                    let dotEdgeProtocol = edgeStmt.attr_list?.find(attr => attr.id === 'xlabel')?.eq;
-                    if (!dotEdgeProtocol) {
-                        console.warn("DOT edge statement missing 'xlabel' (protocol), cannot reliably match to communication link. Skipping:", edgeStmt);
-                        return; // Skip if we can't identify the protocol
-                    }
-                    // Clean up potential quotes around the xlabel value if the parser includes them
-                    dotEdgeProtocol = dotEdgeProtocol.replace(/^"(.*)"$/, '$1');
+                        let edgeStyle = "edgeStyle=orthogonalEdgeStyle;"; // Base style
 
-                    console.log(`Processing DOT edge: ${sourceTitle} -> ${targetTitle} with protocol: ${dotEdgeProtocol}`); // Debugging
+                        // --- CORRECTED ATTRIBUTE ACCESS ---
+                        // Attributes are in the 'children' array of the Edge statement
+                        const attributes = edgeStmt.children?.filter(child => child.type === 'Attribute') ?? [];
 
-                    // Validate node IDs - Ensure corresponding vertices exist in our map
-                    if (
-                      !(sourceTitle in nodeIdMap) ||
-                      !(targetTitle in nodeIdMap)
-                    ) {
-                      console.warn("Invalid edge source or target title found in DOT edge statement, skipping:", sourceTitle, "->", targetTitle);
-                      return; // Skip this edge statement
-                    }
+                        // Find the 'xlabel' attribute
+                        const xlabelAttr = attributes.find(attr => attr.key?.value === 'xlabel');
+                        let dotEdgeProtocol = xlabelAttr?.value?.value; // Get the actual value string
 
-                    // Get source and target vertices
-                    let sourceVertex = nodeIdMap[sourceTitle];
-                    let targetVertex = nodeIdMap[targetTitle];
+                        if (!dotEdgeProtocol) {
+                            // If no xlabel, check if there's a regular 'label' (less common for edges, but possible)
+                            const labelAttr = attributes.find(attr => attr.key?.value === 'label');
+                            dotEdgeProtocol = labelAttr?.value?.value; // Fallback to 'label' if 'xlabel' is missing
 
-                    // --- MODIFICATION START ---
-                    // Find the specific communication link in the Threagile model
-                    // that matches source, target, AND protocol.
-                    let matchingCommLinkKey = undefined;
-                    let matchingCommLinkData = undefined;
-
-                    if (sourceVertex.technicalAsset?.key && targetVertex.technicalAsset?.id) {
-                        let sourceAssetKey = sourceVertex.technicalAsset.key;
-                        let targetAssetId = targetVertex.technicalAsset.id;
-                        let allLinksForSource = graph.model.threagile.getIn(["technical_assets", sourceAssetKey, "communication_links"]);
-
-                        if (allLinksForSource) {
-                            let linksData = allLinksForSource.toJSON(); // Convert to plain JS object/map
-
-                            // Find the key of the link matching target AND protocol
-                            matchingCommLinkKey = Object.keys(linksData).find(commLinkKey => {
-                                const link = linksData[commLinkKey];
-                                // Case-insensitive comparison for protocol might be safer
-                                return link.target === targetAssetId &&
-                                       link.protocol?.toLowerCase() === dotEdgeProtocol.toLowerCase();
-                            });
-
-                            if (matchingCommLinkKey) {
-                                matchingCommLinkData = linksData[matchingCommLinkKey];
-                                console.log(`Matched DOT edge protocol '${dotEdgeProtocol}' to comm link key: ${matchingCommLinkKey}`);
+                            if (!dotEdgeProtocol) {
+                                 console.warn("DOT edge statement missing 'xlabel' (or 'label') for protocol, cannot reliably match to communication link. Skipping:", edgeStmt);
+                                 return; // Skip if we can't identify the protocol
                             } else {
-                                console.warn(`Could not find matching communication link in Threagile model for ${sourceAssetKey} -> ${targetAssetId} with protocol '${dotEdgeProtocol}'`);
+                                console.log(`Using 'label' attribute as protocol for edge: ${sourceTitle} -> ${targetTitle}`);
+                            }
+                        }
+
+                        // Clean up potential quotes (parser usually handles this, but safer)
+                        dotEdgeProtocol = dotEdgeProtocol.replace(/^"(.*)"$/, '$1').replace(/^<.*>$/, ''); // Remove quotes and HTML tags if present
+
+                        console.log(`Processing DOT edge: ${sourceTitle} -> ${targetTitle} with protocol: ${dotEdgeProtocol}`);
+
+                        // --- REST OF YOUR EDGE PROCESSING LOGIC (using sourceTitle, targetTitle, dotEdgeProtocol) ---
+
+                        // Validate node IDs - Ensure corresponding vertices exist in our map
+                        if (
+                          !(sourceTitle in nodeIdMap) ||
+                          !(targetTitle in nodeIdMap)
+                        ) {
+                          console.warn("Invalid edge source or target title found in DOT edge statement, skipping:", sourceTitle, "->", targetTitle);
+                          return; // Skip this edge statement
+                        }
+
+                        // Get source and target vertices
+                        let sourceVertex = nodeIdMap[sourceTitle];
+                        let targetVertex = nodeIdMap[targetTitle];
+
+                        // Find the specific communication link in the Threagile model...
+                        // (Your existing logic for matching using dotEdgeProtocol seems correct here)
+                        let matchingCommLinkKey = undefined;
+                        let matchingCommLinkData = undefined;
+
+                        if (sourceVertex.technicalAsset?.key && targetVertex.technicalAsset?.id) {
+                            let sourceAssetKey = sourceVertex.technicalAsset.key;
+                            let targetAssetId = targetVertex.technicalAsset.id;
+                            let allLinksForSource = graph.model.threagile.getIn(["technical_assets", sourceAssetKey, "communication_links"]);
+
+                            if (allLinksForSource) {
+                                let linksData = allLinksForSource.toJSON(); // Convert to plain JS object/map
+
+                                // Find the key of the link matching target AND protocol
+                                matchingCommLinkKey = Object.keys(linksData).find(commLinkKey => {
+                                    const link = linksData[commLinkKey];
+                                    // Case-insensitive comparison for protocol might be safer
+                                    return link.target === targetAssetId &&
+                                           link.protocol?.toLowerCase() === dotEdgeProtocol.toLowerCase();
+                                });
+
+                                if (matchingCommLinkKey) {
+                                    matchingCommLinkData = linksData[matchingCommLinkKey];
+                                    console.log(`Matched DOT edge protocol '${dotEdgeProtocol}' to comm link key: ${matchingCommLinkKey}`);
+                                } else {
+                                    console.warn(`Could not find matching communication link in Threagile model for ${sourceAssetKey} -> ${targetAssetId} with protocol '${dotEdgeProtocol}'`);
+                                }
+                            } else {
+                                console.warn("No communication_links found in model for source asset:", sourceAssetKey);
                             }
                         } else {
-                            console.warn("No communication_links found in model for source asset:", sourceAssetKey);
-                        }
-                    } else {
-                         console.warn("Source or target vertex missing technicalAsset data for edge matching:", sourceTitle, "->", targetTitle);
-                    }
-
-
-                    // Create a NEW mxGraph edge for THIS specific edgeStmt
-                    let edge = graph.insertEdge(
-                      parent,
-                      null, // ID can be null or generate a unique one if needed: `edge-${index}`
-                      dotEdgeProtocol, // Use the protocol as the initial visual label for the edge
-                      sourceVertex,
-                      targetVertex,
-                      edgeStyle // You might want to vary style based on protocol later
-                    );
-
-                    // Associate the SPECIFIC matched communication link data with this edge
-                    if (matchingCommLinkKey && matchingCommLinkData) {
-                         edge.communicationAssetKey = matchingCommLinkKey; // The specific key (e.g., "Git-Repo Code Write Access")
-                         edge.communicationAsset    = graph.model.threagile.getIn(["technical_assets", sourceVertex.technicalAsset.key, "communication_links", matchingCommLinkKey]); // Assign the Immutable object directly
-                        // edge.communicationAsset = matchingCommLinkData; // Or assign the plain JS object if preferred
-                    } else {
-                        // Handle cases where no matching link was found - maybe add a warning style?
-                        edge.error_no_match = true; // Mark the edge if data couldn't be matched
-                        console.error(`Failed to associate Threagile data to edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
-                    }
-
-
-                    // --- Apply Waypoints (Geometry) ---
-                    // Try to find the specific SVG path for this source/target/protocol combination
-                    let pathPoints = undefined;
-                    edgeSVGs.forEach((edgeSVG) => {
-                        let svgTitle = edgeSVG.querySelector("title")?.textContent; // e.g., "source->target"
-                        let pathElement = edgeSVG.querySelector("path");
-                        let textElements = edgeSVG.querySelectorAll("text"); // Look for text elements within the edge group
-
-                        // Match based on title AND potentially the text label within the SVG edge group
-                        let svgEdgeLabel = '';
-                        if (textElements && textElements.length > 0) {
-                            // Assuming the first text element holds the protocol label Graphviz renders
-                            svgEdgeLabel = textElements[0].textContent;
+                             console.warn("Source or target vertex missing technicalAsset data for edge matching:", sourceTitle, "->", targetTitle);
                         }
 
-                        let potentialSvgTitle = `${sourceTitle}->${targetTitle}`;
+                        // Create a NEW mxGraph edge...
+                        let edge = graph.insertEdge(
+                          parent,
+                          null,
+                          dotEdgeProtocol,
+                          sourceVertex,
+                          targetVertex,
+                          edgeStyle
+                        );
 
-                        // Refined Matching: Check title AND the rendered label matches the DOT protocol
-                        if (svgTitle === potentialSvgTitle && svgEdgeLabel.toLowerCase() === dotEdgeProtocol.toLowerCase() && pathElement) {
-                            let svgPath = pathElement.getAttribute("d");
-                            if (svgPath) {
-                               // Same path parsing logic as before...
-                                let pointsStr = svgPath.match(/([MC L])([^MC L]+)/g);
-                                if (pointsStr) {
-                                   pointsStr.shift();
-                                   if (pointsStr.length > 0 && !pointsStr[pointsStr.length - 1].includes(',')) {
-                                       pointsStr.pop();
-                                   }
-                                   pathPoints = pointsStr.map(pointString => {
-                                        let coords = pointString.trim().split(/[ ,]+/);
-                                        let x = parseFloat(coords[0]);
-                                        let y = parseFloat(coords[1]);
-                                        return new mxPoint(x, y);
-                                    }).filter(pt => !isNaN(pt.x) && !isNaN(pt.y));
-                                }
+                        // Associate the SPECIFIC matched communication link data...
+                        if (matchingCommLinkKey && matchingCommLinkData) {
+                             edge.communicationAssetKey = matchingCommLinkKey;
+                             edge.communicationAsset    = graph.model.threagile.getIn(["technical_assets", sourceVertex.technicalAsset.key, "communication_links", matchingCommLinkKey]);
+                        } else {
+                            edge.error_no_match = true;
+                            console.error(`Failed to associate Threagile data to edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
+                        }
+
+
+                        // Apply Waypoints (Geometry)...
+                        // (Your existing logic for finding the SVG path and applying points seems okay,
+                        // but double-check the SVG matching logic if needed)
+                        let pathPoints = undefined;
+                        edgeSVGs.forEach((edgeSVG) => {
+                            let svgTitle = edgeSVG.querySelector("title")?.textContent;
+                            let pathElement = edgeSVG.querySelector("path");
+                            let textElements = edgeSVG.querySelectorAll("text");
+                            let svgEdgeLabel = '';
+                            if (textElements && textElements.length > 0) {
+                                svgEdgeLabel = textElements[0].textContent;
                             }
-                            // Found the matching SVG edge, no need to check others for this edgeStmt
-                            return; // Exit the edgeSVGs.forEach early
+                            let potentialSvgTitle = `${sourceTitle}->${targetTitle}`;
+                            if (svgTitle === potentialSvgTitle && svgEdgeLabel.toLowerCase() === dotEdgeProtocol.toLowerCase() && pathElement) {
+                                let svgPath = pathElement.getAttribute("d");
+                                if (svgPath) {
+                                   let pointsStr = svgPath.match(/([MC L])([^MC L]+)/g);
+                                   if (pointsStr) {
+                                       pointsStr.shift();
+                                       if (pointsStr.length > 0 && !pointsStr[pointsStr.length - 1].includes(',')) {
+                                           pointsStr.pop();
+                                       }
+                                       pathPoints = pointsStr.map(pointString => {
+                                            let coords = pointString.trim().split(/[ ,]+/);
+                                            let x = parseFloat(coords[0]);
+                                            let y = parseFloat(coords[1]);
+                                            return new mxPoint(x, y);
+                                        }).filter(pt => !isNaN(pt.x) && !isNaN(pt.y));
+                                   }
+                                }
+                                return;
+                            }
+                        });
+
+                        if (pathPoints && pathPoints.length > 0) {
+                            let edgeGeometry = edge.getGeometry();
+                            if (!edgeGeometry) {
+                                edgeGeometry = new mxGeometry();
+                                edgeGeometry.relative = true;
+                            }
+                            edgeGeometry = edgeGeometry.clone();
+                            edgeGeometry.points = pathPoints;
+                            graph.getModel().setGeometry(edge, edgeGeometry);
+                            console.log(`Applied waypoints to edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
+                        } else {
+                           console.log(`No specific waypoints found/applied for edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
                         }
-                    });
 
-                    // Assign waypoints to THIS edge if they were found
-                    if (pathPoints && pathPoints.length > 0) {
-                        let edgeGeometry = edge.getGeometry();
-                        if (!edgeGeometry) {
-                            edgeGeometry = new mxGeometry();
-                            edgeGeometry.relative = true;
-                        }
-                        edgeGeometry = edgeGeometry.clone();
-                        edgeGeometry.points = pathPoints;
-                        graph.getModel().setGeometry(edge, edgeGeometry);
-                        console.log(`Applied waypoints to edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
-                    } else {
-                       console.log(`No specific waypoints found/applied for edge: ${sourceTitle} -> ${targetTitle} (${dotEdgeProtocol})`);
-                       // Consider applying a default edge routing style if no points found
-                       // edge.setStyle(edge.getStyle() + ';edgeStyle=elbowEdgeStyle;orthogonal=1;'); // Example
-                    }
-                    // --- MODIFICATION END ---
-
-                  }); // End of edgeStmts.forEach
-
-
+                    }); // End of edgeStmts.forEach
                   const endTime = performance.now();
                     console.log(`Call to doSomething took ${endTime - startTime} milliseconds.`);
                     loadingBar.updateProgress(100, 'Import complete.');
@@ -921,9 +950,8 @@ Swal.fire({
             graph.fit();
           }
         } catch (e) {
-          mxUtils.alert(
-            e.message
-          );
+         
+           console.log( e)
         }
 	 finally {
 		         graph.setEnabled(layoutEnabled);

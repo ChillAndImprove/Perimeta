@@ -1,0 +1,865 @@
+import * as YAML from 'npm:yaml';
+import {
+    // Import core model state and initialization
+    modelState,
+    initModelState,
+    // Import enums and parsing functions
+    Criticality, Usage, Quantity, Confidentiality, TechnicalAssetType, TechnicalAssetSize,
+    TechnicalAssetTechnology, EncryptionStyle, TechnicalAssetMachine, DataFormat, CommunicationLink,
+    Authentication, Authorization, Protocol, TrustBoundaryType, RiskFunction, STRIDE,
+    RiskSeverity, RiskExploitationLikelihood, RiskExploitationImpact, DataBreachProbability, RiskStatus,
+    parseCriticality, parseUsage, parseQuantity, parseConfidentiality, parseTechnicalAssetType,
+    parseTechnicalAssetSize, parseTechnicalAssetTechnology, parseEncryptionStyle, parseTechnicalAssetMachine,
+    parseDataFormat, parseAuthentication, parseAuthorization, parseProtocol, parseTrustBoundaryType,
+    parseRiskFunction, parseSTRIDE, parseRiskSeverity, parseRiskExploitationLikelihood,
+    parseRiskExploitationImpact, parseDataBreachProbability, parseRiskStatus,
+    // Import main interfaces/classes
+    ModelInput, ParsedModel, DataAsset, TechnicalAsset, TrustBoundary, SharedRuntime,
+    RiskCategory, Risk, RiskTracking, CommunicationLink as ModelCommunicationLink, // Alias if needed
+    // Import helper functions
+    addToListOfSupportedTags, makeID, normalizeTag, contains, containsCaseInsensitiveAny, isTaggedWithBaseTag,
+    // Import sorting/filtering functions if needed elsewhere (risk generation might use them)
+    getAllRisks, RiskForMarshaling, // Import the structure for final JSON output
+    isRiskStatusStillAtRisk
+} from './model/types.ts'; // Adjust path as needed
+
+// Import the chosen RAA calculation algorithm
+import { applyRAA as calculateRAA } from './raa/multifactor/multi.ts'; // Assuming it's in raa-calculator.ts
+
+import * as accidental_secret_leak from './risks/built-in/accidental-secret-leak/accidental-secret-leak-rule.ts';
+import * as code_backdooring from './risks/built-in/code-backdooring/code-backdooring-rule.ts';
+import * as container_baseimage_backdooring from './risks/built-in/container-baseimage-backdooring/container-baseimage-backdooring-rule.ts';
+import * as container_platform_escape from './risks/built-in/container-platform-escape/container-platform-escape-rule.ts';
+import * as cross_site_request_forgery from './risks/built-in/cross-site-request-forgery/cross-site-request-forgery-rule.ts';
+import * as cross_site_scripting from './risks/built-in/cross-site-scripting/cross-site-scripting-rule.ts';
+import * as dos_risky_access_across_trust_boundary from './risks/built-in/dos-risky-access-across-trust-boundary/dos-risky-access-across-trust-boundary-rule.ts';
+import * as incomplete_model from './risks/built-in/incomplete-model/incomplete-model-rule.ts';
+import * as ldap_injection from './risks/built-in/ldap-injection/ldap-injection-rule.ts';
+import * as missing_authentication from './risks/built-in/missing-authentication/missing-authentication-rule.ts';
+import * as missing_authentication_second_factor from './risks/built-in/missing-authentication-second-factor/missing-authentication-second-factor-rule.ts';
+import * as missing_build_infrastructure from './risks/built-in/missing-build-infrastructure/missing-build-infrastructure-rule.ts';
+import * as missing_cloud_hardening from './risks/built-in/missing-cloud-hardening/missing-cloud-hardening-rule.ts';
+import * as missing_file_validation from './risks/built-in/missing-file-validation/missing-file-validation-rule.ts';
+import * as missing_hardening from './risks/built-in/missing-hardening/missing-hardening-rule.ts';
+import * as missing_identity_propagation from './risks/built-in/missing-identity-propagation/missing-identity-propagation-rule.ts';
+import * as missing_identity_provider_isolation from './risks/built-in/missing-identity-provider-isolation/missing-identity-provider-isolation-rule.ts';
+import * as missing_identity_store from './risks/built-in/missing-identity-store/missing-identity-store-rule.ts';
+import * as missing_network_segmentation from './risks/built-in/missing-network-segmentation/missing-network-segmentation-rule.ts';
+import * as missing_vault from './risks/built-in/missing-vault/missing-vault-rule.ts';
+import * as missing_vault_isolation from './risks/built-in/missing-vault-isolation/missing-vault-isolation-rule.ts';
+import * as missing_waf from './risks/built-in/missing-waf/missing-waf-rule.ts';
+import * as mixed_targets_on_shared_runtime from './risks/built-in/mixed-targets-on-shared-runtime/mixed-targets-on-shared-runtime-rule.ts';
+import * as path_traversal from './risks/built-in/path-traversal/path-traversal-rule.ts';
+import * as push_instead_of_pull_deployment from './risks/built-in/push-instead-of-pull-deployment/push-instead-of-pull-deployment-rule.ts';
+import * as search_query_injection from './risks/built-in/search-query-injection/search-query-injection-rule.ts';
+import * as server_side_request_forgery from './risks/built-in/server-side-request-forgery/server-side-request-forgery-rule.ts';
+import * as service_registry_poisoning from './risks/built-in/service-registry-poisoning/service-registry-poisoning-rule.ts';
+import * as sql_nosql_injection from './risks/built-in/sql-nosql-injection/sql-nosql-injection-rule.ts';
+import * as unchecked_deployment from './risks/built-in/unchecked-deployment/unchecked-deployment-rule.ts';
+import * as unencrypted_asset from './risks/built-in/unencrypted-asset/unencrypted-asset-rule.ts';
+import * as unencrypted_communication from './risks/built-in/unencrypted-communication/unencrypted-communication-rule.ts';
+import * as unguarded_access_from_internet from './risks/built-in/unguarded-access-from-internet/unguarded-access-from-internet-rule.ts';
+import * as unguarded_direct_datastore_access from './risks/built-in/unguarded-direct-datastore-access/unguarded-direct-datastore-access-rule.ts';
+import * as unnecessary_communication_link from './risks/built-in/unnecessary-communication-link/unnecessary-communication-link-rule.ts';
+import * as unnecessary_data_asset from './risks/built-in/unnecessary-data-asset/unnecessary-data-asset-rule.ts';
+import * as unnecessary_data_transfer from './risks/built-in/unnecessary-data-transfer/unnecessary-data-transfer-rule.ts';
+import * as unnecessary_technical_asset from './risks/built-in/unnecessary-technical-asset/unnecessary-technical-asset-rule.ts';
+import * as untrusted_deserialization from './risks/built-in/untrusted-deserialization/untrusted-deserialization-rule.ts';
+import * as wrong_communication_link_content from './risks/built-in/wrong-communication-link-content/wrong-communication-link-content-rule.ts';
+import * as wrong_trust_boundary_content from './risks/built-in/wrong-trust-boundary-content/wrong-trust-boundary-content-rule.ts';
+import * as xml_external_entity from './risks/built-in/xml-external-entity/xml-external-entity-rule.ts';
+
+
+// --- Constants and Regex ---
+const ERROR_PREFIX = '$$__ERROR__$$: ';
+const validIdSyntax = /^[a-zA-Z0-9-]+$/;
+
+// --- Helper Functions (Specific to main logic) ---
+
+function withDefault(value: any, defaultValue: string): string {
+    // Handles null, undefined, and potentially empty strings depending on desired behavior
+    return String(value ?? defaultValue);
+}
+
+function lowerCaseAndTrim(arr: string[] | undefined): string[] {
+    if (!arr) return [];
+    return arr.map(s => s.trim().toLowerCase());
+}
+
+/**
+ * Basic tag validation (lowercase, trim, check against available tags if needed).
+ * Returns the processed tags or throws an error string.
+ */
+function checkTags(tags: string[] | undefined, context: string): string[] {
+    const processedTags = lowerCaseAndTrim(tags);
+    // Optional: Add validation against modelState.parsedModelRoot?.tagsAvailable if strict checking is required
+    /*
+    if (modelState.parsedModelRoot?.tagsAvailable) {
+        for (const tag of processedTags) {
+            if (!modelState.parsedModelRoot.tagsAvailable.includes(tag)) {
+                // Returning error string as per original Go style
+                return [`${ERROR_PREFIX}unknown tag specified in ${context}: ${tag}`];
+                 // Or: throw new Error(`${ERROR_PREFIX}unknown tag specified in ${context}: ${tag}`);
+            }
+        }
+    }*/
+    addToListOfSupportedTags(processedTags); // Add to the global list of used tags
+    return processedTags;
+}
+
+/**
+ * Validates ID syntax. Returns error string if invalid.
+ */
+function checkIdSyntax(id: string): string | null {
+    if (!validIdSyntax.test(id)) {
+        return `${ERROR_PREFIX}invalid id syntax used (only letters, numbers, and hyphen allowed): ${id}`;
+    }
+    return null;
+}
+
+/**
+ * Checks if nested trust boundaries exist. Returns error string if not.
+ */
+function checkNestedTrustBoundariesExisting(): string | null {
+    if (!modelState.parsedModelRoot?.trustBoundaries) return null;
+    for (const tb of Object.values(modelState.parsedModelRoot.trustBoundaries)) {
+        for (const nestedId of tb.trustBoundariesNested) {
+            if (!modelState.parsedModelRoot.trustBoundaries[nestedId]) {
+                return `${ERROR_PREFIX}trust boundary "${tb.title}" references nested trust boundary "${nestedId}" which was not found`;
+            }
+        }
+    }
+    return null;
+}
+
+/**
+ * Removes path components from image filenames in the Overview structure.
+ */
+function removePathElementsFromImageFiles(overview: any): any {
+    if (!overview || !overview.images || !Array.isArray(overview.images)) {
+        return overview;
+    }
+    // Basic implementation: assumes 'images' is an array of objects where values are filenames
+    // A more robust version would need to know the exact structure of the 'images' map/array
+    try {
+        overview.images = overview.images.map((imgObj: Record<string, string>) => {
+            const newObj: Record<string, string> = {};
+            for (const key in imgObj) {
+                // Basic basename extraction
+                const parts = imgObj[key].split(/[\\/]/);
+                newObj[key] = parts[parts.length - 1];
+            }
+            return newObj;
+        });
+    } catch (e) {
+        console.warn("Could not process image paths:", e);
+        // Return original if processing fails
+    }
+    return overview;
+}
+
+/**
+ * Creates a unique ID for a data flow (communication link).
+ * Note: Simple concatenation, might not be truly unique in edge cases.
+ */
+function createDataFlowId(sourceAssetId: string, commLinkTitle: string): string {
+    // Using makeID to sanitize the title part, similar to Go's approach for assets/boundaries
+    return `${sourceAssetId}->${makeID(commLinkTitle)}`;
+}
+
+/**
+ * Creates the unique synthetic ID for a risk instance.
+ */
+function createSyntheticId(
+    categoryId: string,
+    dataAssetId?: string,
+    technicalAssetId?: string,
+    commLinkId?: string,
+    trustBoundaryId?: string,
+    sharedRuntimeId?: string): string {
+    // Concatenate relevant non-empty IDs with '@'
+    const parts = [
+        categoryId,
+        dataAssetId,
+        technicalAssetId,
+        commLinkId,
+        trustBoundaryId,
+        sharedRuntimeId
+    ].filter(id => id); // Filter out undefined or empty strings
+
+    return parts.join('@');
+}
+
+
+// --- Main Parsing Function ---
+
+/**
+ * Parses the model YAML string, populates the modelState, calculates RAA,
+ * and returns the ParsedModel as a JSON string.
+ * Returns an error string starting with '$$__ERROR__$$:' on failure.
+ */
+export function parseModelFromString(modelYaml: string): string {
+    try {
+        initModelState(); // Reset global state
+
+        const input = YAML.parse(modelYaml) as ModelInput;
+        if (!input || typeof input !== 'object') {
+             return `${ERROR_PREFIX}invalid YAML input`;
+        }
+
+        const parsedDate = input.date ? new Date(input.date) : new Date();
+        if (input.date && isNaN(parsedDate.getTime())) {
+             return `${ERROR_PREFIX}unable to parse 'date' value: ${input.date}`;
+        }
+
+        const businessCriticality = parseCriticality(input.business_criticality || '');
+        if (!businessCriticality) {
+             return `${ERROR_PREFIX}unknown 'business_criticality' value: ${input.business_criticality}`;
+        }
+
+
+        // Initialize ParsedModel
+        modelState.parsedModelRoot = {
+            author: input.author || {},
+            title: input.title || 'Untitled Model',
+            date: parsedDate,
+            managementSummaryComment: input.management_summary_comment || '',
+            businessCriticality: businessCriticality,
+            businessOverview: removePathElementsFromImageFiles(input.business_overview || { description: '', images: [] }),
+            technicalOverview: removePathElementsFromImageFiles(input.technical_overview || { description: '', images: [] }),
+            questions: input.questions || {},
+            abuseCases: input.abuse_cases || {},
+            securityRequirements: input.security_requirements || {},
+            tagsAvailable: lowerCaseAndTrim(input.tags_available), // Keep original list for reference if needed
+            dataAssets: {},
+            technicalAssets: {},
+            trustBoundaries: {},
+            sharedRuntimes: {},
+            individualRiskCategories: {}, // Parsed categories go here
+            riskTracking: {}, // Parsed tracking info goes here
+            // Diagram tweaks
+            diagramTweakNodesep: input.diagram_tweak_nodesep ?? 2,
+            diagramTweakRanksep: input.diagram_tweak_ranksep ?? 2,
+            diagramTweakEdgeLayout: input.diagram_tweak_edge_layout || 'ortho',
+            diagramTweakSuppressEdgeLabels: input.diagram_tweak_suppress_edge_labels || false,
+            diagramTweakLayoutLeftToRight: input.diagram_tweak_layout_left_to_right || false,
+            diagramTweakInvisibleConnectionsBetweenAssets: input.diagram_tweak_invisible_connections_between_assets || [],
+            diagramTweakSameRankAssets: input.diagram_tweak_same_rank_assets || [],
+        };
+
+        // Keep track of IDs to check for duplicates across different types
+        const allIDs = new Set<string>();
+
+        // 1. Data Assets
+        if (input.data_assets) {
+            for (const [title, assetInput] of Object.entries(input.data_assets)) {
+                const id = assetInput.id || makeID(title);
+                let error = checkIdSyntax(id);
+                if (error) return error;
+                if (allIDs.has(id)) return `${ERROR_PREFIX}duplicate id used: ${id}`;
+                allIDs.add(id);
+
+                try {
+                     // Use the DataAsset constructor for parsing and validation
+                    const dataAsset = new DataAsset(assetInput, id);
+                     // Validate tags (constructor doesn't throw error string, so do it here)
+                     try {
+                         dataAsset.tags = checkTags(assetInput.tags, `data asset '${title}'`);
+                     } catch (tagError: any) {
+                         return tagError.message; // Assuming checkTags throws identifiable error
+                     }
+                     modelState.parsedModelRoot.dataAssets[id] = dataAsset;
+                } catch(parseError: any) {
+                    return `${ERROR_PREFIX}parsing data asset '${title}' (id: ${id}): ${parseError.message}`;
+                }
+            }
+        }
+
+        // 2. Technical Assets (and their Communication Links)
+        if (input.technical_assets) {
+             for (const [title, assetInput] of Object.entries(input.technical_assets)) {
+                 const id = assetInput.id || makeID(title);
+                 let error = checkIdSyntax(id);
+                 if (error) return error;
+                 if (allIDs.has(id)) return `${ERROR_PREFIX}duplicate id used: ${id}`;
+                 allIDs.add(id);
+
+                  // --- Pre-parse Enums for TechnicalAsset ---
+                  const usage = parseUsage(assetInput.usage || '');
+                  if (!usage) return `${ERROR_PREFIX}unknown 'usage' for tech asset '${title}': ${assetInput.usage}`;
+                  const type = parseTechnicalAssetType(assetInput.type || '');
+                  if (!type) return `${ERROR_PREFIX}unknown 'type' for tech asset '${title}': ${assetInput.type}`;
+                  const size = parseTechnicalAssetSize(assetInput.size || '');
+                  if (!size) return `${ERROR_PREFIX}unknown 'size' for tech asset '${title}': ${assetInput.size}`;
+                  const technology = parseTechnicalAssetTechnology(assetInput.technology || '');
+                  if (!technology) return `${ERROR_PREFIX}unknown 'technology' for tech asset '${title}': ${assetInput.technology}`;
+                  const machine = parseTechnicalAssetMachine(assetInput.machine || '');
+                  if (!machine) return `${ERROR_PREFIX}unknown 'machine' for tech asset '${title}': ${assetInput.machine}`;
+                  const encryption = parseEncryptionStyle(assetInput.encryption || '');
+                  if (!encryption) return `${ERROR_PREFIX}unknown 'encryption' for tech asset '${title}': ${assetInput.encryption}`;
+                  const confidentiality = parseConfidentiality(assetInput.confidentiality || '');
+                  if (!confidentiality) return `${ERROR_PREFIX}unknown 'confidentiality' for tech asset '${title}': ${assetInput.confidentiality}`;
+                  const integrity = parseCriticality(assetInput.integrity || '');
+                  if (!integrity) return `${ERROR_PREFIX}unknown 'integrity' for tech asset '${title}': ${assetInput.integrity}`;
+                  const availability = parseCriticality(assetInput.availability || '');
+                  if (!availability) return `${ERROR_PREFIX}unknown 'availability' for tech asset '${title}': ${assetInput.availability}`;
+
+                   const dataFormatsAccepted: DataFormat[] = [];
+                   if (assetInput.data_formats_accepted) {
+                       for (const formatStr of assetInput.data_formats_accepted) {
+                           const format = parseDataFormat(formatStr);
+                           if (!format) return `${ERROR_PREFIX}unknown 'data_formats_accepted' value in tech asset '${title}': ${formatStr}`;
+                           dataFormatsAccepted.push(format);
+                       }
+                   }
+
+                   // Create the asset instance (without communication links initially)
+                   const techAsset = new TechnicalAsset(
+                       { // Pass pre-parsed enums/values to constructor/creator
+                           ...assetInput,
+                           usage, type, size, technology, machine, encryption,
+                           confidentiality, integrity, availability,
+                           data_formats_accepted: dataFormatsAccepted, // Pass parsed formats
+                           communication_links: {} // Links added below
+                       },
+                       id
+                   );
+
+                   // Validate Tags
+                    try {
+                        techAsset.tags = checkTags(assetInput.tags, `technical asset '${title}'`);
+                    } catch (tagError: any) {
+                        return tagError.message;
+                    }
+
+                     // Validate referenced data assets
+                    for (const dataId of techAsset.dataAssetsProcessed) {
+                        if (!modelState.parsedModelRoot.dataAssets[dataId]) {
+                            return `${ERROR_PREFIX}tech asset '${title}' references missing processed data asset: ${dataId}`;
+                        }
+                    }
+                    for (const dataId of techAsset.dataAssetsStored) {
+                        if (!modelState.parsedModelRoot.dataAssets[dataId]) {
+                            return `${ERROR_PREFIX}tech asset '${title}' references missing stored data asset: ${dataId}`;
+                        }
+                    }
+
+                    // Parse Communication Links
+                    const communicationLinks: ModelCommunicationLink[] = [];
+                    if (assetInput.communication_links) {
+                         for (const [commTitle, commInput] of Object.entries(assetInput.communication_links)) {
+                             const targetId = commInput.target;
+                             // Target existence check happens later after all assets are parsed
+
+                             const commUsage = parseUsage(commInput.usage || '');
+                             if (!commUsage) return `${ERROR_PREFIX}unknown 'usage' for comm link '${commTitle}' in tech asset '${title}': ${commInput.usage}`;
+                             const commProtocol = parseProtocol(commInput.protocol || '');
+                             if (!commProtocol) return `${ERROR_PREFIX}unknown 'protocol' for comm link '${commTitle}' in tech asset '${title}': ${commInput.protocol}`;
+                             const commAuthN = parseAuthentication(commInput.authentication || '');
+                             if (!commAuthN) return `${ERROR_PREFIX}unknown 'authentication' for comm link '${commTitle}' in tech asset '${title}': ${commInput.authentication}`;
+                             const commAuthZ = parseAuthorization(commInput.authorization || '');
+                             if (!commAuthZ) return `${ERROR_PREFIX}unknown 'authorization' for comm link '${commTitle}' in tech asset '${title}': ${commInput.authorization}`;
+
+                            // Validate referenced data assets
+                            const dataAssetsSent = commInput.data_assets_sent || [];
+                            for (const dataId of dataAssetsSent) {
+                                if (!modelState.parsedModelRoot.dataAssets[dataId]) {
+                                     return `${ERROR_PREFIX}comm link '${commTitle}' in tech asset '${title}' references missing sent data asset: ${dataId}`;
+                                }
+                            }
+                            const dataAssetsReceived = commInput.data_assets_received || [];
+                            for (const dataId of dataAssetsReceived) {
+                                if (!modelState.parsedModelRoot.dataAssets[dataId]) {
+                                     return `${ERROR_PREFIX}comm link '${commTitle}' in tech asset '${title}' references missing received data asset: ${dataId}`;
+                                }
+                            }
+
+                             // Create CommunicationLink instance
+                             const commLink = new ModelCommunicationLink(
+                                 { // Pass pre-parsed enums and validated data asset lists
+                                     ...commInput,
+                                     usage: commUsage,
+                                     protocol: commProtocol,
+                                     authentication: commAuthN,
+                                     authorization: commAuthZ,
+                                     data_assets_sent: dataAssetsSent,
+                                     data_assets_received: dataAssetsReceived,
+                                 },
+                                 id, // sourceId
+                                 targetId
+                             );
+
+                            // Validate Tags
+                             try {
+                                 commLink.tags = checkTags(commInput.tags, `communication link '${commTitle}' of tech asset '${title}'`);
+                             } catch (tagError: any) {
+                                 return tagError.message;
+                             }
+
+                             communicationLinks.push(commLink);
+
+                             // Populate global maps
+                             modelState.communicationLinks[commLink.id] = commLink;
+                             if (!modelState.incomingTechnicalCommunicationLinksMappedByTargetId[targetId]) {
+                                 modelState.incomingTechnicalCommunicationLinksMappedByTargetId[targetId] = [];
+                             }
+                             modelState.incomingTechnicalCommunicationLinksMappedByTargetId[targetId].push(commLink);
+                         }
+                    }
+                    techAsset.communicationLinks = communicationLinks; // Assign parsed links
+
+                    modelState.parsedModelRoot.technicalAssets[id] = techAsset;
+             }
+        }
+
+         // 3. Trust Boundaries
+         const assetsInBoundaries = new Set<string>();
+         if (input.trust_boundaries) {
+             for (const [title, boundaryInput] of Object.entries(input.trust_boundaries)) {
+                const id = boundaryInput.id || makeID(title);
+                 let error = checkIdSyntax(id);
+                 if (error) return error;
+                 if (allIDs.has(id)) return `${ERROR_PREFIX}duplicate id used: ${id}`;
+                 allIDs.add(id);
+
+                const type = parseTrustBoundaryType(boundaryInput.type || '');
+                if (!type) return `${ERROR_PREFIX}unknown 'type' for trust boundary '${title}': ${boundaryInput.type}`;
+
+                // Validate assets inside
+                 const technicalAssetsInside = boundaryInput.technical_assets_inside || [];
+                 for (const assetId of technicalAssetsInside) {
+                     if (!modelState.parsedModelRoot.technicalAssets[assetId]) {
+                         return `${ERROR_PREFIX}trust boundary '${title}' references missing tech asset: ${assetId}`;
+                     }
+                     if (assetsInBoundaries.has(assetId)) {
+                          return `${ERROR_PREFIX}tech asset '${assetId}' referenced in multiple trust boundaries (referenced in '${title}')`;
+                     }
+                     assetsInBoundaries.add(assetId);
+                 }
+
+                // Create TrustBoundary instance
+                 const trustBoundary = new TrustBoundary(
+                    { // Pass pre-parsed type and validated asset list
+                        ...boundaryInput,
+                        type: type,
+                        technical_assets_inside: technicalAssetsInside,
+                    },
+                    id
+                 );
+
+                 // Validate Tags
+                 try {
+                     trustBoundary.tags = checkTags(boundaryInput.tags, `trust boundary '${title}'`);
+                 } catch (tagError: any) {
+                     return tagError.message;
+                 }
+
+                 modelState.parsedModelRoot.trustBoundaries[id] = trustBoundary;
+
+                 // Populate mapping
+                 for (const assetId of technicalAssetsInside) {
+                     modelState.directContainingTrustBoundaryMappedByTechnicalAssetId[assetId] = trustBoundary;
+                 }
+             }
+             // Check nested boundaries now that all are parsed
+             const nestedError = checkNestedTrustBoundariesExisting();
+             if (nestedError) return nestedError;
+         }
+
+          // 4. Shared Runtimes
+          if (input.shared_runtimes) {
+              for (const [title, runtimeInput] of Object.entries(input.shared_runtimes)) {
+                 const id = runtimeInput.id || makeID(title);
+                 let error = checkIdSyntax(id);
+                 if (error) return error;
+                 if (allIDs.has(id)) return `${ERROR_PREFIX}duplicate id used: ${id}`;
+                 allIDs.add(id);
+
+                 // Validate assets running
+                 const technicalAssetsRunning = runtimeInput.technical_assets_running || [];
+                 for (const assetId of technicalAssetsRunning) {
+                     if (!modelState.parsedModelRoot.technicalAssets[assetId]) {
+                         return `${ERROR_PREFIX}shared runtime '${title}' references missing tech asset: ${assetId}`;
+                     }
+                 }
+
+                 // Create SharedRuntime instance
+                  const sharedRuntime = new SharedRuntime(
+                    { // Pass validated asset list
+                        ...runtimeInput,
+                        technical_assets_running: technicalAssetsRunning,
+                    },
+                    id
+                  );
+
+                 // Validate Tags
+                  try {
+                      sharedRuntime.tags = checkTags(runtimeInput.tags, `shared runtime '${title}'`);
+                  } catch (tagError: any) {
+                      return tagError.message;
+                  }
+
+                  modelState.parsedModelRoot.sharedRuntimes[id] = sharedRuntime;
+
+                  // Populate mapping
+                 for (const assetId of technicalAssetsRunning) {
+                      modelState.directContainingSharedRuntimeMappedByTechnicalAssetId[assetId] = sharedRuntime;
+                  }
+              }
+          }
+
+
+          // 5. Individual Risk Categories (used as base for generated risks)
+          //    Also parses the embedded individual risk instances
+          if (input.individual_risk_categories) {
+              for (const [title, categoryInput] of Object.entries(input.individual_risk_categories)) {
+                 const id = categoryInput.id || makeID(title);
+                 let error = checkIdSyntax(id);
+                 if (error) return error;
+                 // Note: Risk Category IDs don't clash with asset/boundary/runtime IDs in the original logic
+                 // if (allIDs.has(id)) return `${ERROR_PREFIX}duplicate id used: ${id}`;
+                 // allIDs.add(id); // Add if needed, but likely separate namespace
+
+                 const riskFunction = parseRiskFunction(categoryInput.function || '');
+                 if (!riskFunction) return `${ERROR_PREFIX}unknown 'function' for risk category '${title}': ${categoryInput.function}`;
+                 const stride = parseSTRIDE(categoryInput.stride || '');
+                 if (!stride) return `${ERROR_PREFIX}unknown 'stride' for risk category '${title}': ${categoryInput.stride}`;
+
+                  const category: RiskCategory = {
+                      id: id,
+                      title: title,
+                      description: withDefault(categoryInput.description, title),
+                      impact: withDefault(categoryInput.impact, ''),
+                      asvs: withDefault(categoryInput.asvs, ''),
+                      cheatSheet: withDefault(categoryInput.cheat_sheet, ''),
+                      action: withDefault(categoryInput.action, ''),
+                      mitigation: withDefault(categoryInput.mitigation, ''),
+                      check: withDefault(categoryInput.check, ''),
+                      detectionLogic: withDefault(categoryInput.detection_logic, ''),
+                      riskAssessment: withDefault(categoryInput.risk_assessment, ''),
+                      falsePositives: withDefault(categoryInput.false_positives, ''),
+                      function: riskFunction,
+                      stride: stride,
+                      modelFailurePossibleReason: categoryInput.model_failure_possible_reason || false,
+                      cwe: categoryInput.cwe || 0,
+                  };
+
+                  modelState.parsedModelRoot.individualRiskCategories[id] = category;
+
+                  // Parse Individual Risk Instances defined within this category
+                  if (categoryInput.risks_identified) {
+                      for (const [riskTitle, riskInput] of Object.entries(categoryInput.risks_identified)) {
+                         const severity = parseRiskSeverity(riskInput.severity || '') ?? RiskSeverity.Medium;
+                         const likelihood = parseRiskExploitationLikelihood(riskInput.exploitation_likelihood || '') ?? RiskExploitationLikelihood.Likely;
+                         const impact = parseRiskExploitationImpact(riskInput.exploitation_impact || '') ?? RiskExploitationImpact.MediumImpact;
+                         const dataBreachProbability = parseDataBreachProbability(riskInput.data_breach_probability || '') ?? DataBreachProbability.Possible;
+
+                         // Validate referenced elements
+                          const mostRelevantDataAssetId = riskInput.most_relevant_data_asset;
+                          if (mostRelevantDataAssetId && !modelState.parsedModelRoot.dataAssets[mostRelevantDataAssetId]) {
+                               return `${ERROR_PREFIX}individual risk '${riskTitle}' references missing data asset: ${mostRelevantDataAssetId}`;
+                          }
+                          const mostRelevantTechnicalAssetId = riskInput.most_relevant_technical_asset;
+                          if (mostRelevantTechnicalAssetId && !modelState.parsedModelRoot.technicalAssets[mostRelevantTechnicalAssetId]) {
+                               return `${ERROR_PREFIX}individual risk '${riskTitle}' references missing tech asset: ${mostRelevantTechnicalAssetId}`;
+                          }
+                           const mostRelevantCommunicationLinkId = riskInput.most_relevant_communication_link;
+                           // Check against the globally collected links
+                           if (mostRelevantCommunicationLinkId && !modelState.communicationLinks[mostRelevantCommunicationLinkId]) {
+                                // Might need to adjust ID generation/lookup if this fails often
+                               console.warn(`Potentially missing comm link ref in individual risk '${riskTitle}': ${mostRelevantCommunicationLinkId}. Check ID format.`);
+                                // return `${ERROR_PREFIX}individual risk '${riskTitle}' references missing communication link: ${mostRelevantCommunicationLinkId}`;
+                           }
+                           const mostRelevantTrustBoundaryId = riskInput.most_relevant_trust_boundary;
+                           if (mostRelevantTrustBoundaryId && !modelState.parsedModelRoot.trustBoundaries[mostRelevantTrustBoundaryId]) {
+                                return `${ERROR_PREFIX}individual risk '${riskTitle}' references missing trust boundary: ${mostRelevantTrustBoundaryId}`;
+                           }
+                           const mostRelevantSharedRuntimeId = riskInput.most_relevant_shared_runtime;
+                           if (mostRelevantSharedRuntimeId && !modelState.parsedModelRoot.sharedRuntimes[mostRelevantSharedRuntimeId]) {
+                                return `${ERROR_PREFIX}individual risk '${riskTitle}' references missing shared runtime: ${mostRelevantSharedRuntimeId}`;
+                           }
+
+                           const dataBreachTechnicalAssetIDs = riskInput.data_breach_technical_assets || [];
+                           for (const assetId of dataBreachTechnicalAssetIDs) {
+                                if (!modelState.parsedModelRoot.technicalAssets[assetId]) {
+                                    return `${ERROR_PREFIX}individual risk '${riskTitle}' data breach assets reference missing tech asset: ${assetId}`;
+                                }
+                           }
+
+                           // Create synthetic ID
+                           const syntheticId = createSyntheticId(
+                               id, // category ID
+                               mostRelevantDataAssetId,
+                               mostRelevantTechnicalAssetId,
+                               mostRelevantCommunicationLinkId,
+                               mostRelevantTrustBoundaryId,
+                               mostRelevantSharedRuntimeId
+                           );
+
+                           // Create Risk instance
+                           const risk = new Risk(
+                               id, // Store category ID
+                               severity,
+                               likelihood,
+                               impact,
+                               riskTitle,
+                               syntheticId,
+                               dataBreachProbability,
+                               dataBreachTechnicalAssetIDs,
+                               mostRelevantDataAssetId,
+                               mostRelevantTechnicalAssetId,
+                               mostRelevantTrustBoundaryId, // Pass trust boundary
+                               mostRelevantSharedRuntimeId, // Pass shared runtime
+                               mostRelevantCommunicationLinkId // Pass comm link
+                           );
+
+
+                           // Add to generated risks map (using category object as key)
+                           if (!modelState.generatedRisksByCategory.has(category)) {
+                               modelState.generatedRisksByCategory.set(category, []);
+                           }
+                           modelState.generatedRisksByCategory.get(category)!.push(risk);
+                      }
+                  }
+              }
+          }
+
+
+          // 6. Risk Tracking
+          const deferredRiskTrackingDueToWildcardMatching: Record<string, RiskTracking> = {}; // Temporary store
+          if (input.risk_tracking) {
+              for (const [syntheticRiskId, trackingInput] of Object.entries(input.risk_tracking)) {
+                 const trackingDate = trackingInput.date ? new Date(trackingInput.date) : new Date(); // Default to now if missing
+                 if (trackingInput.date && isNaN(trackingDate.getTime())) {
+                      return `${ERROR_PREFIX}unable to parse 'date' in risk tracking for '${syntheticRiskId}': ${trackingInput.date}`;
+                 }
+                 const status = parseRiskStatus(trackingInput.status || '');
+                 if (!status) {
+                      return `${ERROR_PREFIX}unknown 'status' in risk tracking for '${syntheticRiskId}': ${trackingInput.status}`;
+                 }
+
+                 const tracking: RiskTracking = {
+                      syntheticRiskId: syntheticRiskId.trim(),
+                      justification: withDefault(trackingInput.justification, ''),
+                      checkedBy: withDefault(trackingInput.checked_by, ''),
+                      ticket: withDefault(trackingInput.ticket, ''),
+                      date: trackingDate,
+                      status: status,
+                  };
+
+                  if (syntheticRiskId.includes('*')) {
+                       deferredRiskTrackingDueToWildcardMatching[syntheticRiskId] = tracking;
+                  } else {
+                       modelState.parsedModelRoot.riskTracking[syntheticRiskId.trim()] = tracking;
+                  }
+              }
+              // TODO: Implement wildcard matching application here if needed.
+              // It involves iterating through generated risks and applying deferred tracking.
+              // This logic is complex and omitted for brevity as per initial request focus.
+              if (Object.keys(deferredRiskTrackingDueToWildcardMatching).length > 0) {
+                  console.warn("Wildcard risk tracking entries are present but not fully processed in this version:", Object.keys(deferredRiskTrackingDueToWildcardMatching));
+              }
+          }
+
+
+          // 7. Final Link Check
+          for (const asset of Object.values(modelState.parsedModelRoot.technicalAssets)) {
+              for (const link of asset.communicationLinks) {
+                  if (!modelState.parsedModelRoot.technicalAssets[link.targetId]) {
+                       return `${ERROR_PREFIX}communication link '${link.title}' from '${asset.title}' references missing target asset: ${link.targetId}`;
+                  }
+              }
+          }
+
+          // 8. Calculate RAA
+          calculateRAA(); // Call the imported RAA calculation function
+
+
+        // 9. Return Parsed Model as JSON
+        return JSON.stringify(modelState.parsedModelRoot, null, 2); // Pretty print JSON
+
+    } catch (error: any) {
+        console.error("Error during model parsing:", error);
+        return `${ERROR_PREFIX}${error.message || 'Unknown parsing error'}`;
+    }
+}
+
+
+// --- Risk Generation Function ---
+
+// Interface for the imported risk rule modules
+interface RiskRuleModule {
+    Category: () => RiskCategory;
+    SupportedTags: () => string[];
+    GenerateRisks: (model?: ParsedModel | null) => Risk[]; // Allow passing model if needed by rule
+}
+
+// Array of imported built-in risk rule modules
+const builtInRiskRules: RiskRuleModule[] = [
+    accidental_secret_leak, code_backdooring, container_baseimage_backdooring,
+    container_platform_escape, cross_site_request_forgery, cross_site_scripting,
+    dos_risky_access_across_trust_boundary, incomplete_model, ldap_injection,
+    missing_authentication, missing_authentication_second_factor, missing_build_infrastructure,
+    missing_cloud_hardening, missing_file_validation, missing_hardening,
+    missing_identity_propagation, missing_identity_provider_isolation, missing_identity_store,
+    missing_network_segmentation, missing_vault, missing_vault_isolation, missing_waf,
+    mixed_targets_on_shared_runtime, path_traversal, push_instead_of_pull_deployment,
+    search_query_injection, server_side_request_forgery, service_registry_poisoning,
+    sql_nosql_injection, unchecked_deployment, unencrypted_asset, unencrypted_communication,
+    unguarded_access_from_internet, unguarded_direct_datastore_access,
+    unnecessary_communication_link, unnecessary_data_asset, unnecessary_data_transfer,
+    unnecessary_technical_asset, untrusted_deserialization, wrong_communication_link_content,
+    wrong_trust_boundary_content, xml_external_entity,
+];
+
+
+/**
+ * Applies the built-in risk generation rules.
+ * Assumes modelState.parsedModelRoot is populated.
+ * Returns a JSON string of all generated risks.
+ */
+export function applyRiskGeneration(): string {
+    if (!modelState.parsedModelRoot) {
+        return `[]`; // Return empty JSON array if model not loaded
+    }
+
+    // Clear previous generation results
+    modelState.generatedRisksByCategory.clear();
+    modelState.generatedRisksBySyntheticId = {};
+
+    // TODO: Implement skipped rules logic if needed (pass as argument or read config)
+    const skippedRules = new Set<string>(); // Example: new Set(['unencrypted-communication']);
+
+    console.log("Applying risk generation rules...");
+
+    // Apply Built-in Rules
+    for (const rule of builtInRiskRules) {
+        const category = rule.Category(); // Get category details
+        if (skippedRules.has(category.id)) {
+            console.log(`Skipping risk rule: ${category.id}`);
+            continue;
+        }
+
+        try {
+            addToListOfSupportedTags(rule.SupportedTags());
+            // Pass model if rule requires it (adapt rule signature if needed)
+            const risks = rule.GenerateRisks(modelState.parsedModelRoot);
+            if (risks.length > 0) {
+                // Store risks under the category object itself as the key
+                modelState.generatedRisksByCategory.set(category, risks);
+            }
+        } catch (e: any) {
+             console.error(`Error generating risks for category ${category.id}:`, e);
+             // Decide if you want to stop or continue on error
+             // return `${ERROR_PREFIX}Failed generating risks for ${category.id}: ${e.message}`;
+        }
+    }
+
+    // TODO: Apply Custom Risk Rules if applicable/ported
+
+    console.log(`Risk generation complete. Found risks in ${modelState.generatedRisksByCategory.size} categories.`);
+
+    // Populate the bySyntheticId map and create marshalable structure
+    const risksForMarshaling: RiskForMarshaling[] = [];
+    for (const [category, risks] of modelState.generatedRisksByCategory.entries()) {
+        for (const risk of risks) {
+            // Ensure the risk has the correct category ID associated internally if needed elsewhere
+            // risk.categoryId = category.id; // Usually set by constructor or derived
+
+            // Clone risk before putting into bySyntheticId map if mutation is a concern
+            // (Cloning logic depends on how deep the clone needs to be)
+            const clonedRisk = risk; // Shallow clone often sufficient
+            modelState.generatedRisksBySyntheticId[risk.syntheticId.toLowerCase()] = clonedRisk;
+
+            // Use the risk's toJSON() method for the output structure
+            risksForMarshaling.push(risk.toJSON() as RiskForMarshaling);
+        }
+    }
+
+    // Sort the final list for consistent output (optional)
+    risksForMarshaling.sort((a, b) => {
+         // Sort primarily by severity (desc), then title (asc)
+         if (a.severity !== b.severity) {
+             // Assuming RiskSeverity enum values allow string comparison for order
+             return b.severity.localeCompare(a.severity);
+         }
+         return a.title.localeCompare(b.title);
+    });
+
+
+    try {
+        return JSON.stringify(risksForMarshaling, null, 2); // Pretty print
+    } catch (e: any) {
+         console.error("Error marshaling risks to JSON:", e);
+         return `${ERROR_PREFIX}Failed to marshal risks: ${e.message}`;
+    }
+}
+
+
+// --- Risk Tracking Check Function ---
+
+/**
+ * Checks if risk tracking entries correspond to generated risks.
+ * Logs warnings or throws errors for orphaned entries.
+ * Returns null on success, or an error string.
+ * NOTE: Does not currently implement wildcard matching from Go version.
+ */
+export function checkRiskTracking(ignoreOrphaned: boolean = false): string | null {
+    if (!modelState.parsedModelRoot) {
+        return `${ERROR_PREFIX}Model not parsed, cannot check risk tracking.`;
+    }
+    if (Object.keys(modelState.generatedRisksBySyntheticId).length === 0) {
+         console.warn("No risks generated, skipping risk tracking check.");
+         return null;
+    }
+
+
+    let errorOccurred = false;
+    const errorMessages: string[] = [];
+
+    for (const tracking of Object.values(modelState.parsedModelRoot.riskTracking)) {
+        // Use lowercase comparison for the lookup as keys in generatedRisksBySyntheticId are lowercased
+        if (!modelState.generatedRisksBySyntheticId[tracking.syntheticRiskId.toLowerCase()]) {
+            const message = `Risk tracking references unknown risk (risk id not found): ${tracking.syntheticRiskId}`;
+            if (ignoreOrphaned) {
+                console.warn(message);
+            } else {
+                errorMessages.push(message);
+                errorOccurred = true;
+            }
+        }
+    }
+
+     // Assign risk status back to the original Risk objects (optional, if needed)
+     // This is mostly for data consistency if the Risk object itself needs the status
+     // The toJSON() method already fetches the status dynamically.
+     /*
+     for (const risk of Object.values(modelState.generatedRisksBySyntheticId)) {
+         risk.riskStatus = risk.getRiskTrackingStatusDefaultingUnchecked();
+     }
+     */
+
+    if (errorOccurred) {
+        return `${ERROR_PREFIX}Orphaned risk tracking entries found:\n- ${errorMessages.join('\n- ')} \n(Use ignoreOrphaned=true to suppress this error)`;
+    }
+
+    console.log("Risk tracking check completed.");
+    return null; // Success
+}
+
+
+// --- RAA Application Function ---
+
+/**
+ * Applies the configured RAA calculation algorithm.
+ * Assumes modelState.parsedModelRoot is populated.
+ */
+export function applyRAA(): string {
+     if (!modelState.parsedModelRoot) {
+         return `${ERROR_PREFIX}Model not parsed, cannot apply RAA calculation.`;
+     }
+     // Call the imported RAA function
+     const summary = calculateRAA();
+     console.log("RAA calculation applied.");
+     return summary;
+}

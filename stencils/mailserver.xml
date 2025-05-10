@@ -1,0 +1,55 @@
+<shapes name="mxgraph.servers"> <!-- Or mxgraph.services, mxgraph.network -->
+
+<shape name="mailServer" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Base Server Box - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/>
+        <strokewidth width="3"/>
+        <!-- Centered vertical rectangle -->
+        <rect x="40" y="32" w="111" h="127"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Envelope Symbol (On Server) - Drawn Last -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Outline -->
+        <fillcolor color="#FFFFFF"/>   <!-- White Fill -->
+        <strokewidth width="2.5"/>
+        <!-- Centered horizontally and vertically on the server box -->
+        <!-- Server Box Center: X=95.5, Y=95.5 -->
+        <!-- Envelope Size: W=70, H=50 -->
+        <def name="envX" val="60.5"/> <!-- 95.5 - 70/2 -->
+        <def name="envY" val="70.5"/> <!-- 95.5 - 50/2 -->
+        <def name="envW" val="70"/>
+        <def name="envH" val="50"/>
+
+        <!-- Main rectangle -->
+        <rect x="#var(envX)" y="#var(envY)" w="#var(envW)" h="#var(envH)"/>
+        <fillstroke/>
+        <!-- Flap lines -->
+        <path>
+            <move x="#eval(envX)" y="#eval(envY)"/> <!-- Top Left -->
+             <!-- Mid point of bottom edge: X = envX + envW/2, Y = envY + envH -->
+            <line x="#eval(envX + envW/2)" y="#eval(envY + envH)"/>
+             <!-- Top Right -->
+            <line x="#eval(envX + envW)" y="#eval(envY)"/>
+        </path>
+        <stroke/> <!-- Only stroke for the flap lines -->
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

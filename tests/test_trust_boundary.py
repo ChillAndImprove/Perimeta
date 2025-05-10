@@ -31,8 +31,10 @@ def browser_and_setup(request):
     driver.get("http://0.0.0.0:8000/indexTests.html")
     driver.set_window_size(1854, 1011)
     driver.switch_to.frame(0)
-    driver.find_element(By.CSS_SELECTOR, "td:nth-child(1) > .geBtn").click()
+    set_trace()
+    driver.find_element(By.CSS_SELECTOR, "#customer_portal_erp_threat_model").click()
     driver.switch_to.default_content()
+    time.sleep(2)
 
     # ✅ Focus the node you're working on
     # ✅ Focus the rectangle node you're working on
@@ -50,7 +52,7 @@ def browser_and_setup(request):
                 if (cell != null && cell.vertex) {
                     var style = cell.style;
                     // Check if the style contains "rectangle"
-                    if (style && style.indexOf("rectangle") !== -1) {
+                    if (style && style.indexOf("rectangle") !== -1 && cell.value === "Dev Network") {
                         graph.setSelectionCell(cell);
                         graph.scrollCellToVisible(cell);
                         return cell.id;
@@ -140,8 +142,7 @@ def post_test_hook(request):
                     var cell = model.getChildAt(layer, j);
                     if (cell != null && cell.vertex) {
                         var style = cell.style;
-                        // Check if the style contains "rectangle"
-                        if (style && style.indexOf("rectangle") !== -1) {
+                        if (style && style.indexOf("rectangle") !== -1 && cell.value=== "Dev Network") {
                             graph.setSelectionCell(cell);
                             graph.scrollCellToVisible(cell);
                             return cell.id;
@@ -444,18 +445,18 @@ class TestTrustBoundary():
         assert actual_value == expected_value, f"Expected {attribute} '{expected_value}', but got '{actual_value}'"
 
 
-    def verify_table_elements(self, xpath, expected_texts):
+    def verify_table_elements(self, theid, expected_texts):
         """
         Wait for the elements defined by the given XPath to be visible and
         verify that their text contents match the expected array of strings.
         """
         # Wait up to 10 seconds for the data cells to become visible.
         WebDriverWait(self.driver, 10).until(
-            EC.visibility_of_all_elements_located((By.XPATH, xpath))
+            EC.visibility_of_all_elements_located((By.ID, theid))
         )
         
         # Retrieve all elements matching the XPath.
-        table = self.driver.find_element(By.XPATH, xpath)
+        table = self.driver.find_element(By.ID, theid)
         rows = table.find_elements(By.TAG_NAME, "tr")
 
         # Skip the first <tr> (the <th> header row)
@@ -473,25 +474,29 @@ class TestTrustBoundary():
             )
 
     def test_table_data2(self):
+        self.driver.switch_to.default_content()
         # Example XPath for table data cells.
         # Adjust this XPath as needed if your target data is in a different row or column.
-        data_xpath = "/html/body/div[4]/div[2]/div/div[4]/table"
         # Array containing the expected text for each data cell in order.
+
+        theid = "TrustBoundaryNestedID"
         expected_data = [
         ]
-        self.verify_table_elements(data_xpath, expected_data)
+        self.verify_table_elements(theid, expected_data)
     def test_table_data(self):
+        self.driver.switch_to.default_content()
         # Example XPath for table data cells.
         # Adjust this XPath as needed if your target data is in a different row or column.
-        data_xpath = "/html/body/div[4]/div[2]/div/div[3]/table"
         # Array containing the expected text for each data cell in order.
+
+        theid = "TrustBoundaryTechnicalAssetsInside"
         expected_data = [
             "Backend Admin Client",
             "Backoffice Client",
             "Git Repository",
             "Jenkins Buildserver"
         ]
-        self.verify_table_elements(data_xpath, expected_data)
+        self.verify_table_elements(theid, expected_data)
     def test_edit_id(self):
         self.edit_and_verify_field(
             xpath="/html/body/div[4]/div[2]/div/div[1]/li[2]/button",

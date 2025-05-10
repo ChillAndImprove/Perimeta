@@ -1,0 +1,82 @@
+<shapes name="mxgraph.process">
+
+<shape name="clientDevOpsInfinityTerminal" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle (Light Blue Style) - SCALED -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+        <!-- SCALED x, y, w, h, arcsize to fill 190x190 -->
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Main Window/Dashboard Frame - SCALED -->
+        <save/>
+        <strokecolor color="#424949"/>
+        <fillcolor color="#ABB2B9"/> <!-- Frame fill -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="3"/>
+        <!-- SCALED x, y, w, h, arcsize -->
+        <roundrect x="16" y="32" w="158" h="127" arcsize="8"/>
+        <fillstroke/>
+
+        <!-- Inner Content Area Background - SCALED -->
+        <strokecolor color="#1C2833"/>
+        <fillcolor color="#2C3E50"/> <!-- Dark background -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="2"/>
+        <!-- SCALED x, y, w, h -->
+        <rect x="24" y="40" w="143" h="111"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. DevOps Symbols (Inside Content Area) - SCALED -->
+        <save/>
+        <strokecolor color="#EAECEE"/> <!-- Light color for symbols -->
+        <!-- SCALED strokewidth -->
+        <strokewidth width="5"/>
+
+        <!-- Infinity Symbol (∞) - SCALED -->
+        <save/>
+        <!-- SCALED x, y, w, h -->
+        <!-- Left loop -->
+        <ellipse x="40" y="71" w="48" h="48"/>
+        <stroke/>
+        <!-- Right loop -->
+        <ellipse x="87" y="71" w="48" h="48"/>
+        <stroke/>
+        <restore/>
+
+
+        <!-- Terminal Prompt Symbol (>_) - SCALED -->
+        <save/>
+        <strokecolor color="#ABEBC6"/> <!-- Greenish tint -->
+        <!-- Note: Font properties are ignored as we use paths, but keep strokecolor -->
+
+         <!-- Draw the '>' symbol - SCALED Coordinates -->
+         <path>
+             <move x="40" y="122"/>
+             <line x="52" y="132"/>
+             <line x="40" y="141"/>
+         </path>
+         <stroke/>
+
+         <!-- Draw the '_' cursor - SCALED Coordinates -->
+          <path>
+             <move x="59" y="141"/>
+             <line x="74" y="141"/>
+         </path>
+         <stroke/>
+
+        <restore/>
+
+        <restore/> <!-- Restore state after drawing symbols -->
+
+    </foreground>
+</shape>
+
+</shapes>

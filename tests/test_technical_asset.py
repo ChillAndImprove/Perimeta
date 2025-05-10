@@ -22,6 +22,7 @@ temp_profile = tempfile.mkdtemp()
 @pytest.fixture(scope="class")
 def browser_and_setup(request):
     # ✅ Setup browser once
+    set_trace()
     options = Options()
     options.add_argument("--window-size=1854,1011")
     options.add_argument(f'--user-data-dir={temp_profile}')
@@ -35,9 +36,10 @@ def browser_and_setup(request):
     driver.get("http://0.0.0.0:8000/indexTests.html")
     driver.set_window_size(1854, 1011)
     driver.switch_to.frame(0)
-    driver.find_element(By.CSS_SELECTOR, "td:nth-child(1) > .geBtn").click()
+    driver.find_element(By.ID, "customer_portal_erp_threat_model").click()
     driver.switch_to.default_content()
 
+    time.sleep(2)
     # ✅ Focus the node you're working on
     target_label = "Customer Web Client"
     target_cell_id = driver.execute_script(f"""
@@ -71,17 +73,62 @@ def browser_and_setup(request):
     # ✅ Provide driver to test class
     request.cls.driver = driver
     # ✅ Rename to 'foo'
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))
-    ).click()
-    input_box = driver.switch_to.active_element
-    input_box.send_keys(Keys.CONTROL, 'a')
-    input_box.send_keys("foo")
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.XPATH, "/html/body/div[10]/table/tbody/tr[3]/td/button[2]"))
-    ).click()
+    # Click on key
+    # --- Configuration for editing the 'key' property ---
+    property_to_edit = "key" # The property we are editing
+    new_value = "foo"
+    timeout = 10
 
-    # 👇 Make the driver available to tests
+    # --- Define Locators using the added IDs ---
+    trigger_button_id = f"threagile-asset-button-{property_to_edit}"
+    # *** Use the specific ID for the textarea ***
+    input_box_locator = (By.ID, f"threagile-dialog-{property_to_edit}-textarea")
+    apply_button_id = f"threagile-dialog-{property_to_edit}-apply-button"
+
+    print(f"\n--- Starting edit process for property: '{property_to_edit}' ---")
+
+    # ✅ Rename to 'foo' using robust ID-based locators
+    # 1. Click the button that opens the dialog (e.g., the 'key' button)
+    print(f"Waiting for and clicking trigger button: ID={trigger_button_id}")
+    trigger_button = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((By.ID, trigger_button_id))
+    )
+    trigger_button.click()
+    print("Trigger button clicked.")
+
+    # 2. Wait for the input box (textarea) using its new ID
+    print(f"Waiting for input box: {input_box_locator}")
+    input_box = WebDriverWait(driver, timeout).until(
+        EC.visibility_of_element_located(input_box_locator) # Wait for visibility using ID
+    )
+    print("Input box found.")
+
+    # 3. Clear the input box reliably and send the new value
+    input_box.click() # Ensure focus
+    # Send Ctrl+A (or Cmd+A on Mac) then Backspace
+    # Check platform using capabilities or os.name as fallback
+    platform = driver.capabilities.get('platformName', '').lower()
+    if not platform: # Fallback if capabilities don't provide it
+         platform = os.name # 'posix' for Linux/Mac, 'nt' for Windows
+
+    if "mac" in platform or "posix" in platform: # Added 'posix' for broader check
+        print("Using Command+A for clearing.")
+        input_box.send_keys(Keys.COMMAND, 'a')
+    else: # Assume Windows/other
+        print("Using Control+A for clearing.")
+        input_box.send_keys(Keys.CONTROL, 'a')
+    input_box.send_keys(Keys.BACKSPACE) # Or Keys.DELETE
+    input_box.send_keys(new_value)
+    print(f"Sent '{new_value}' to input box.")
+
+    # 4. Click the Apply button using its ID
+    print(f"Waiting for and clicking apply button: ID={apply_button_id}")
+    apply_button = WebDriverWait(driver, timeout).until(
+        EC.element_to_be_clickable((By.ID, apply_button_id))
+    )
+    apply_button.click()
+    print("Apply button clicked.")
+    print(f"--- Edit process for '{property_to_edit}' complete ---")    
     request.cls.driver = driver
     yield driver
     try:
@@ -303,6 +350,7 @@ class TestTechnicalAsset():
             nested_path = nested_path_prefix + [data_asset_id]
 
 
+            time.sleep(0.5)
             data = threagile_data[root_key][asset_key][nested_path[0]]
             found = False
             for i, key in enumerate(data):
@@ -706,7 +754,70 @@ class TestTechnicalAsset():
             nested_path_prefix=['data_assets_processed']
         )
            
+    def test_check_tags_and_interact(self):
+        
+         # Helper to fetch and parse Threagile data
+         def get_threagile_tags_length(asset_key):
+             try:
+                 data_str = self.driver.execute_script("return editorUi.editor.graph.model.threagile.toJSON();")
+                 # The JS might return a string that needs parsing, or already a dict/list if driver handles it.
+                 # For safety, let's try to parse if it's a string.
+                 if isinstance(data_str, str):
+                     threagile_data = json.loads(data_str)
+                 else:
+                     threagile_data = data_str # Assume it's already a dict/list
+               
+                 # Safely access nested keys
+                 asset_data = threagile_data.get(asset_key, {})
+                 tags = asset_data.get("tags", [])
+                 return len(tags)
+             except Exception as e:
+                 print(f"Error fetching/parsing Threagile data: {e}")
+                 # Potentially return -1 or raise error to indicate failure
+                 return -1 
+         asset_name= "Customer Web Client"
+         # 1. Get initial tags length
+         initial_tags_length = get_threagile_tags_length(asset_name)
+         print(f"Initial tags length for '{asset_name}': {initial_tags_length}")
 
+         if initial_tags_length == -1:
+             print("Could not get initial tags length. Aborting further actions.")
+             return
+
+         # 2. Perform UI actions that might change tags
+         print("Performing UI actions to potentially modify tags...")
+         try:
+             parent_li = WebDriverWait(self.driver, 10).until(
+                 EC.presence_of_element_located((By.ID, "threagile-asset-item-tags"))
+             )
+             tag_input_field = parent_li.find_element(By.CSS_SELECTOR, "tags.tagify > span.tagify__input")
+           
+             # The following actions might be for selecting a suggestion or confirming an input
+             tag_input_field.send_keys(Keys.ARROW_DOWN)
+             time.sleep(0.2)
+             tag_input_field.send_keys(Keys.ARROW_UP)
+             time.sleep(0.2)
+             tag_input_field.send_keys(Keys.ENTER)
+             print("UI actions complete. Waiting for potential updates...")
+             time.sleep(1) # Give a bit more time for JS/backend to process tag addition/removal
+         except Exception as e:
+             print(f"Error during UI interaction: {e}")
+             # Decide if you want to proceed to re-fetch or not
+             # For now, we'll proceed to see if anything changed despite the error
+
+         # 3. Re-fetch tags length
+         updated_tags_length = get_threagile_tags_length(asset_name)
+         print(f"Updated tags length for '{asset_name}': {updated_tags_length}")
+
+         # 4. Check if length changed
+         if updated_tags_length != -1 and initial_tags_length != -1: # Ensure both fetches were successful
+             if updated_tags_length != initial_tags_length:
+                 print(f"SUCCESS: Tags length for '{asset_name}' changed from {initial_tags_length} to {updated_tags_length}.")
+             else:
+                 print(f"INFO: Tags length for '{asset_name}' did NOT change. Still {initial_tags_length}.")
+         else:
+             print("Could not reliably compare tags length due to fetch errors.")
+ 
     def test_add_tag_data_assets_stored_contract_summaries(self):
         WebDriverWait(self.driver, 10).until(
             EC.element_to_be_clickable((By.XPATH, "/html/body/div[4]/div[2]/div/div/div[1]/li[1]/button"))

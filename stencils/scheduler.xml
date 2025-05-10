@@ -1,0 +1,61 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.compute, mxgraph.automation -->
+
+<shape name="scheduler" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Clock Face Symbol (Time Aspect) - Behind -->
+        <save/>
+        <strokecolor color="#424949"/> <!-- Dark Grey Border -->
+        <fillcolor color="#ABB2B9"/>   <!-- Medium Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- Centered Clock -->
+        <ellipse x="45" y="45" w="100" h="100"/>
+        <fillstroke/>
+        <!-- Clock Hands -->
+        <strokecolor color="#34495E"/>
+        <strokewidth width="4"/> <linecap cap="round"/>
+        <path> <move x="95" y="95"/> <line x="95" y="60"/> </path> <stroke/> <!-- Minute Hand -->
+        <strokewidth width="6"/> <linecap cap="round"/>
+        <path> <move x="95" y="95"/> <line x="125" y="95"/> </path> <stroke/> <!-- Hour Hand -->
+        <!-- Center Hub -->
+        <fillcolor color="#34495E"/> <strokecolor color="none"/>
+        <ellipse x="90" y="90" w="10" h="10"/> <fill/>
+        <restore/>
+
+        <!-- 3. Processing/Action Symbol (Gear) - In Front -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish-Orange Border -->
+        <fillcolor color="#F5B041"/>   <!-- Lighter Orange Fill -->
+        <alpha alpha="0.85"/>       <!-- Make gear slightly transparent -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned centrally, overlapping the clock -->
+        <!-- Gear Center approx: x=95, y=95 -->
+        <ellipse x="70" y="70" w="50" h="50"/> <!-- Slightly smaller gear -->
+        <fillstroke/>
+        <!-- Inner Cutout -->
+        <ellipse x="87.5" y="87.5" w="15" h="15">
+             <fillcolor color="#ABB2B9"/> <!-- Match clock fill color -->
+             <strokecolor color="#AF601A"/> <strokewidth width="1"/> <alpha alpha="1.0"/>
+        </ellipse>
+        <fillstroke/> <alpha alpha="0.85"/> <!-- Re-apply alpha for teeth -->
+        <!-- Teeth (Simplified) -->
+        <strokewidth width="4"/>
+        <path> <move x="95" y="70"/> <line x="95" y="63"/> </path> <stroke/> <!-- Top -->
+        <path> <move x="120" y="95"/> <line x="127" y="95"/> </path> <stroke/> <!-- Right -->
+        <path> <move x="95" y="120"/> <line x="95" y="127"/> </path> <stroke/> <!-- Bottom -->
+        <path> <move x="70" y="95"/> <line x="63" y="95"/> </path> <stroke/> <!-- Left -->
+        <restore/> <!-- Restore state after gear (incl. alpha) -->
+
+    </foreground>
+</shape>
+
+</shapes>

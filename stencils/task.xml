@@ -1,0 +1,56 @@
+<shapes name="mxgraph.general"> <!-- Or mxgraph.process, mxgraph.planning -->
+
+<shape name="task" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Clipboard Symbol -->
+        <save/>
+        <!-- Clipboard Body -->
+        <strokecolor color="#424949"/> <!-- Dark Grey Border -->
+        <fillcolor color="#ABB2B9"/>   <!-- Medium Grey Fill -->
+        <strokewidth width="3"/>
+        <!-- Positioned Centered -->
+        <rect x="45" y="50" w="100" h="110"/> <!-- Main Board -->
+        <fillstroke/>
+
+        <!-- Clipboard Clip -->
+        <strokecolor color="#34495E"/>
+        <fillcolor color="#5D6D7E"/>
+        <strokewidth width="2"/>
+        <!-- Clip Base -->
+        <rect x="70" y="35" w="50" h="20"/>
+        <fillstroke/>
+        <!-- Clip Spring (Simplified) -->
+        <ellipse x="85" y="30" w="20" h="10"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 3. Checkmark Symbol (On Clipboard) -->
+        <save/>
+        <!-- Use a prominent color like green -->
+        <strokecolor color="#27AE60"/>
+        <strokewidth width="8"/> <!-- Thick checkmark -->
+        <linecap cap="round"/>
+        <linejoin join="round"/>
+        <!-- Positioned in the center of the clipboard area -->
+        <path>
+            <move x="70" y="100"/> <!-- Start Left -->
+            <line x="95" y="125"/> <!-- Down to Center -->
+            <line x="130" y="80"/> <!-- Up Right -->
+        </path>
+        <stroke/>
+        <restore/>
+
+    </foreground>
+</shape>
+
+</shapes>

@@ -1,0 +1,73 @@
+<shapes name="mxgraph.integration"> <!-- Or mxgraph.compute, mxgraph.data -->
+
+<shape name="streamProcessing" aspect="fixed" w="190" h="190" strokewidth="1">
+    <connections/>
+    <foreground>
+        <!-- 1. Background Rectangle - SCALED Consistent Style -->
+        <save/>
+        <strokecolor color="#85C1E9"/>
+        <fillcolor color="#D6EAF8"/>
+        <strokewidth width="5"/>
+        <roundrect x="0" y="0" w="190" h="190" arcsize="13"/>
+        <fillstroke/>
+        <restore/>
+
+        <!-- 2. Wavy Stream Line -->
+        <save/>
+        <strokecolor color="#3498DB"/> <!-- Stronger Blue for the stream -->
+        <strokewidth width="4"/>       <!-- Make the stream path clear -->
+        <path>
+            <move x="20" y="95"/> <!-- Start Left Middle -->
+            <!-- Wave Up -->
+            <quad x1="57.5" y1="60" x="95" y="95"/> <!-- Control point up, end center middle -->
+            <!-- Wave Down -->
+            <quad x1="132.5" y1="130" x="170" y="95"/> <!-- Control point down, end right middle -->
+        </path>
+        <stroke/>
+        <restore/>
+
+        <!-- 3. Data Points on the Stream -->
+        <save/>
+        <fillcolor color="#2ECC71"/> <!-- Green dots for data -->
+        <strokecolor color="none"/>
+        <!-- Dot 1 (Near Start) -->
+        <ellipse x="35" y="80" w="10" h="10"/> <fill/>
+        <!-- Dot 2 (Near Peak) -->
+        <ellipse x="70" y="65" w="10" h="10"/> <fill/>
+        <!-- Dot 3 (Near Trough) -->
+        <ellipse x="115" y="110" w="10" h="10"/> <fill/>
+        <!-- Dot 4 (Near End) -->
+        <ellipse x="150" y="90" w="10" h="10"/> <fill/>
+        <restore/>
+
+        <!-- 4. Processing Symbol (Gear) - Overlapping the Stream -->
+        <save/>
+        <strokecolor color="#AF601A"/> <!-- Brownish-Orange Border -->
+        <fillcolor color="#F5B041"/>   <!-- Lighter Orange Fill -->
+        <strokewidth width="2.5"/>
+        <!-- Positioned centrally, intersecting the stream -->
+        <!-- Gear Center approx: x=95, y=95 -->
+        <ellipse x="75" y="75" w="40" h="40"/>
+        <fillstroke/>
+        <!-- Inner Cutout -->
+        <ellipse x="87.5" y="87.5" w="15" h="15">
+             <fillcolor color="#D6EAF8"/> <strokecolor color="#AF601A"/> <strokewidth width="1"/>
+        </ellipse>
+        <fillstroke/>
+        <!-- Teeth (Simplified) -->
+        <strokewidth width="3.5"/>
+        <path> <move x="95" y="75"/> <line x="95" y="69"/> </path> <stroke/> <!-- Top -->
+        <path> <move x="115" y="95"/> <line x="121" y="95"/> </path> <stroke/> <!-- Right -->
+        <path> <move x="95" y="115"/> <line x="95" y="121"/> </path> <stroke/> <!-- Bottom -->
+        <path> <move x="75" y="95"/> <line x="69" y="95"/> </path> <stroke/> <!-- Left -->
+        <!-- Diagonals -->
+        <path> <move x="109" y="81"/> <line x="113" y="77"/> </path> <stroke/>
+        <path> <move x="109" y="109"/> <line x="113" y="113"/> </path> <stroke/>
+        <path> <move x="81" y="109"/> <line x="77" y="113"/> </path> <stroke/>
+        <path> <move x="81" y="81"/> <line x="77" y="77"/> </path> <stroke/>
+        <restore/> <!-- Restore state after gear -->
+
+    </foreground>
+</shape>
+
+</shapes>

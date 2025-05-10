@@ -6,28 +6,28 @@
  */
 var OpenDialog = function () {
   var iframe = document.createElement("iframe");
-  iframe.style.backgroundColor = "transparent";
-  iframe.allowTransparency = "true";
-  iframe.style.borderStyle = "none";
+  // iframe.style.backgroundColor = "transparent"; // Keep or remove based on desired look
+  // iframe.allowTransparency = "true";         // Keep or remove based on desired look
+  iframe.style.borderStyle = "none";         // No border for fullscreen
   iframe.style.borderWidth = "0px";
-  iframe.style.overflow = "hidden";
-  iframe.frameBorder = "0";
+  // iframe.style.overflow = "hidden"; // Let the content scroll if needed
+  iframe.frameBorder = "0"; // Use this attribute for older browsers
 
-  // Adds padding as a workaround for box model in older IE versions
-  var dx =
-    mxClient.IS_VML &&
-    (document.documentMode == null || document.documentMode < 8)
-      ? 20
-      : 0;
+  // --- Style for Fullscreen ---
+  iframe.style.position = "fixed";   // Position relative to the viewport
+  iframe.style.top = "0";
+  iframe.style.left = "0";
+  iframe.style.width = "100vw";     // 100% of viewport width
+  iframe.style.height = "100vh";    // 100% of viewport height
+  iframe.style.zIndex = "1000";     // Ensure it's on top (adjust value if needed)
+  iframe.style.backgroundColor = "#ffffff"; // Add a background color so it's not transparent by default
 
-  iframe.setAttribute(
-    "width",
-    (Editor.useLocalStorage ? 640 : 320) + dx + "px"
-  );
-  iframe.setAttribute(
-    "height",
-    (Editor.useLocalStorage ? 480 : 220) + dx + "px"
-  );
+  // Remove the old fixed size attributes
+  // iframe.setAttribute("width", ...); // No longer needed
+  // iframe.setAttribute("height", ...); // No longer needed
+
+  // Set the source for the content
+  // Ensure OPEN_FORM variable holds the correct path to your open.html
   iframe.setAttribute("src", OPEN_FORM);
 
   this.container = iframe;
