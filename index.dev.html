@@ -3,6 +3,7 @@
 <html>
 <head>
     <title>Triangle</title>
+    <script type="module" src="./app.js" defer></script>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
@@ -87,7 +88,22 @@
         display: flex;
     }
     </style>
-    <script type="module" src="./app.js" defer></script>
+
+	<script type="text/javascript">
+                // This variable will be set by the child window/iframe
+        let currentSelectedThreatStandard = "BSI"; // Initialize
+        window.currentSelectedThreatStandard = "BSI";
+        // Function for the child window to call
+        function setThreatStandardContext(standardCode) {
+            window.currentSelectedThreatStandard = standardCode;
+            console.log(`Parent (index.html): Standard set to: ${currentSelectedThreatStandard}`);
+            // You can now use 'currentSelectedThreatStandard' in index.html
+        }
+
+        function showSelectedStandard() {
+            alert(`Current standard in index.html is: ${currentSelectedThreatStandard}`);
+        }
+	</script>
 
 
 	<script type="text/javascript">
