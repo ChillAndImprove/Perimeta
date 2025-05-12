@@ -4,7 +4,6 @@ import {BoundaryFormatPanel} from './BoundaryFormatPanel.js';
 import {DiagramFormatPanel} from './DiagramFormatPanel.js';
 import {AssetFormatPanel} from './AssetFormatPanel.js';
 import {CommunicationFormatPanel} from './CommunicationFormatPanel.js';
-import * as YAML from 'yaml'; // Import the YAML module directly
 /**
  * Copyright (c) 2006-2012, JGraph Ltd
  */
